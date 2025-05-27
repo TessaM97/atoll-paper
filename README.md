@@ -1,93 +1,130 @@
-# atoll_paper
+# My Python repo
+<!--- Adding a one-line description of what this repository is for here may be
+helpful -->
+<!---
 
+We recommend having a status line in your repo to tell anyone who stumbles
+on your repository where you're up to. Some suggested options:
 
+- prototype: the project is just starting up and the code is all prototype
+- development: the project is actively being worked on
+- finished: the project has achieved what it wanted and is no longer being
+  worked on, we won't reply to any issues
+- dormant: the project is no longer worked on but we might come back to it, if
+  you have questions, feel free to raise an issue
+- abandoned: this project is no longer worked on and we won't reply to any
+  issues
 
-## Getting started
+-->
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Status
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/TessaM97/atoll_paper.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.com/TessaM97/atoll_paper/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- prototype: the project is just starting up and the code is all prototype
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+We do all our environment management using [uv](https://docs.astral.sh/uv/).
+To get started, you will need to make sure that uv is installed
+([instructions here](https://docs.astral.sh/uv/getting-started/installation/),
+we found that using uv's standalone installer was best on a Mac).
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+To create the virtual environment, run
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```sh
+uv sync
+uv run pre-commit install
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+These steps are also captured in the `Makefile` so if you want a single
+command, you can instead simply run `make virtual-enviroment`.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Having installed your virtual environment, you can now run commands in your
+virtual environment using
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+```sh
+uv run <command>
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+For example, to run Python within the virtual environment, run
 
-## License
-For open source projects, say how it is licensed.
+```sh
+uv run python
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+As another example, to run a notebook server, run
+
+```sh
+uv run jupyter lab
+```
+
+<!--- Other documentation and instructions can then be added here as you go,
+perhaps replacing the other instructions above as they may become redundant.
+-->
+
+## Development
+
+<!--- In bigger projects, we would recommend having separate docs where this
+development information can go. However, for such a simple repository, having
+it all in the README is fine. -->
+
+Install and run instructions are the same as the above (this is a simple
+repository, without tests etc. so there are no development-only dependencies).
+
+### Contributing
+
+This is a very thin repository. There aren't any strict guidelines for
+contributing, partly because we don't know what we're trying to achieve (we're
+just exploring). If you would like to contribute, it is best to raise an issue
+to discuss what you want to do (without a discussion, we can't guarantee that
+any contribution can actually be used).
+<!--- You may want to update this section as the project evolves. -->
+
+### Repository structure
+
+The repository is very basic. It imposes no structure on you so you can layout
+your Python files, notebooks etc. in any way you wish. We do have a basic
+`Makefile` which captures key commands in one place (for more thoughts on why
+this makes sense, see
+[general principles: automation](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/general-principles/automation.md)).
+For an introduction to `make`, see
+[this introduction from Software Carpentry](https://swcarpentry.github.io/make-novice/).
+Having said this, if you're not interested in `make`, you can just copy the
+commands out of the `Makefile` by hand and you will be 90% as happy for a
+simple repository like this.
+
+### Tools
+
+In this repository, we use the following tools:
+
+- git for version-control (for more on version control, see
+  [general principles: version control](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/theory/version-control.md))
+    - for these purposes, git is a great version-control system so we don't
+      complicate things any further. For an introduction to Git, see
+      [this introduction from Software Carpentry](http://swcarpentry.github.io/git-novice/).
+- [uv](https://docs.astral.sh/uv/) for environment management
+  (for more on environment management, see
+  [general principles: environment management](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/theory/environment-management.md))
+    - there are lots of environment management systems.
+      uv works well in our experience.
+    - we track the `uv.lock` file so that the environment
+      is completely reproducible on other machines or by other people
+      (e.g. if you want a colleague to take a look at what you've done)
+- [pre-commit](https://pre-commit.com/) with some very basic settings to get some
+  easy wins in terms of maintenance, specifically:
+    - code formatting with [ruff](https://docs.astral.sh/ruff/formatter/)
+    - basic file checks (removing unneeded whitespace, not committing large
+      files etc.)
+    - (for more thoughts on the usefulness of pre-commit, see
+      [general principles: automation](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/general-principles/automation.md)
+    - track your notebooks using
+    [jupytext](https://jupytext.readthedocs.io/en/latest/index.html)
+    (for more thoughts on the usefulness of Jupytext, see
+    [tips and tricks: Jupytext](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/tips-and-tricks/managing-notebooks-jupytext.md))
+        - this avoids nasty merge conflicts and incomprehensible diffs
+
+## Original template
+
+This project was generated from this template:
+[basic python repository](https://gitlab.com/openscm/copier-basic-python-repository).
+[copier](https://copier.readthedocs.io/en/stable/) is used to manage and
+distribute this template.
