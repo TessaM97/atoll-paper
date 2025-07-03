@@ -89,7 +89,7 @@ wave_df
 # %%
 # Base path to search in
 base_dir = (
-    "../data/large_datasets/AR6_regional_SLR_projections/confidence_output_files/"
+    "/Users/tessamoeller/Documents/atoll-slr-paper-data/data/large_datasets/AR6_regional_SLR_projections/confidence_output_files"
 )
 
 # Recursive glob pattern to find files starting with "total_ssp" and ending in ".nc"
@@ -210,7 +210,7 @@ print(df_slr_all.head())
 
 # %%
 COASTRP = xr.open_dataset(
-    "/Users/tessamoeller/Documents/atoll_paper/data/COAST-RP/COAST-RP.nc"
+    "/Users/tessamoeller/Documents/atoll-slr-paper-data/data/large_datasets/COAST-RP/COAST-RP.nc"
 )
 
 # Extract coordinates and storm tide data
@@ -250,7 +250,7 @@ print(gdf[["storm_tide_rp_0001_m", "dist_to_station_km"]].head())
 # %%
 # Open COAST-RP dataset
 COASTRP = xr.open_dataset(
-    "/Users/tessamoeller/Documents/atoll_paper/data/COAST-RP/COAST-RP.nc"
+    "/Users/tessamoeller/Documents/atoll-slr-paper-data/data/large_datasets/COAST-RP/COAST-RP.nc"
 )
 
 # Coordinates of storm tide stations
@@ -329,6 +329,7 @@ df_slr_all.head()
 gdf["W_reef"] = gdf["beach_widt"]
 gdf["beta_f"] = 25 / gdf["Fore_reef_"]
 # gdf
+gdf
 
 # %%
 df_inputs = gdf[["transect_i", "Atoll_FID", "FID_GADM", "geometry", "W_reef", "beta_f"]]
@@ -380,7 +381,7 @@ BEWARE_inputs = df_all[
 # Apply formatting
 for col, sig in sigfig_map.items():
     if col in BEWARE_inputs.columns:
-        BEWARE_inputs[col] = BEWARE_inputs[col].apply(lambda x: format_sigfig(x, sig))
+        BEWARE_inputs[col] = BEWARE_inputs[col].apply(lambda x: round_to_sigfig(x, sig))
 
 
 # %%
@@ -389,6 +390,3 @@ BEWARE_inputs
 # %%
 # BEWARE_inputs.to_csv("../data/processed/Atoll_BEWARE_inputs.csv")
 BEWARE_inputs.to_parquet("../data/processed/Atoll_BEWARE_inputs.parquet", index=False)
-
-# %%
-BEWARE_inputs["beta_f"]
