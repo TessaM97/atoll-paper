@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -116,5 +116,3 @@ m
 # Saving to file
 gdf = gdf.drop(columns="centroid")  # centroids is in EPSG3857, in meters
 gdf.to_file("../data/processed/Atoll_transects_centroids.shp")
-
-# %%

@@ -392,5 +392,3 @@ BEWARE_inputs.to_parquet("../data/processed/Atoll_BEWARE_inputs.parquet", index=
 
 # %%
 BEWARE_inputs["beta_f"]
-
-# %%
