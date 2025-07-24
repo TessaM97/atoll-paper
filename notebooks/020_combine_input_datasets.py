@@ -27,7 +27,13 @@ from scipy.spatial import cKDTree
 # ### Load Shapefile
 
 # %%
-shapefile_path = "../data/processed/Atoll_transects_centroids.shp"
+output_dir = "/Users/tessamoller/Documents/atoll-slr-paper-data/data"
+
+shapefile_path = os.path.join(
+    output_dir,
+    "processed/Atoll_transects_centroids.shp",
+)
+
 gdf = gpd.read_file(shapefile_path)
 gdf
 
@@ -36,8 +42,18 @@ gdf
 
 # %%
 # Load datasets
-COWCLIP_H0 = xr.open_dataset("../data/processed/COWCLIP_ensemble_mean_Hs_1995_2014.nc")
-COWCLIP_L0 = xr.open_dataset("../data/processed/COWCLIP_ensemble_mean_Tm_1995_2014.nc")
+
+COWCLIP_H0_path = os.path.join(
+    output_dir,
+    "processed/COWCLIP_ensemble_mean_Hs_1995_2014.nc")
+
+COWCLIP_Tm_path = os.path.join(
+    output_dir,
+    "processed/COWCLIP_ensemble_mean_Tm_1995_2014.nc")
+
+
+COWCLIP_H0 = xr.open_dataset(COWCLIP_H0_path)
+COWCLIP_Tm = xr.open_dataset(COWCLIP_Tm_path)
 
 # Extract lat/lon grid
 lat = COWCLIP_H0["latitude"].values
@@ -51,8 +67,13 @@ quantile_map = {
 }
 
 
+# Compute wavelength using deepwater linear wave theory
+def calculate_wave_length_L0(Tm, g=9.81):
+    """Compute deepwater wavelength (L0) using linear wave theory."""
+    return float((g * Tm**2) / (2 * np.pi))
+
 # Function to extract nearest value for all centroids
-def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon):
+def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon):
     def find_nearest_index(array, value):
         return np.abs(array - value).argmin()
 
@@ -65,22 +86,25 @@ def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon):
 
         for q, (hs_var, tm_var) in quantile_map.items():
             hs_val = COWCLIP_H0[hs_var].values[lat_idx, lon_idx]
-            tm_val = COWCLIP_L0[tm_var].values[lat_idx, lon_idx]
+            tm_val = COWCLIP_Tm[tm_var].values[lat_idx, lon_idx]
+            l0_val = calculate_wave_length_L0(tm_val)
             records.append(
                 {
                     "transect_i": gdf.iloc[i]["transect_i"],
                     "quantile": q,
                     "H0": hs_val,
-                    "L0": tm_val,
-                    "H0L0": hs_val / tm_val if tm_val > 0 else np.nan,
+                    "Tm": tm_val, 
+                    "L0" : l0_val,
+                    "H0L0":  hs_val / l0_val if tm_val > 0 else np.nan,
                 }
             )
 
     return pd.DataFrame.from_records(records)
 
 
+
 # Apply extraction
-wave_df = extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon)
+wave_df = extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon)
 wave_df
 
 # %% [markdown]
@@ -88,9 +112,10 @@ wave_df
 
 # %%
 # Base path to search in
-base_dir = (
-    "/Users/tessamoeller/Documents/atoll-slr-paper-data/data/large_datasets/AR6_regional_SLR_projections/confidence_output_files"
-)
+
+base_dir = os.path.join(
+    output_dir,
+    "large_datasets/AR6_regional_SLR_projections/confidence_output_files")
 
 # Recursive glob pattern to find files starting with "total_ssp" and ending in ".nc"
 pattern = os.path.join(base_dir, "**", "total_ssp*.nc")
@@ -209,9 +234,11 @@ print(df_slr_all.head())
 # ### Load COAST-RP
 
 # %%
-COASTRP = xr.open_dataset(
-    "/Users/tessamoeller/Documents/atoll-slr-paper-data/data/large_datasets/COAST-RP/COAST-RP.nc"
-)
+COASTRP_path = os.path.join(
+    output_dir,
+    "large_datasets/COAST-RP/COAST-RP.nc")
+
+COASTRP = xr.open_dataset(COASTRP_path)
 
 # Extract coordinates and storm tide data
 x = COASTRP["station_x_coordinate"].values  # longitudes
@@ -249,9 +276,11 @@ print(gdf[["storm_tide_rp_0001_m", "dist_to_station_km"]].head())
 
 # %%
 # Open COAST-RP dataset
-COASTRP = xr.open_dataset(
-    "/Users/tessamoeller/Documents/atoll-slr-paper-data/data/large_datasets/COAST-RP/COAST-RP.nc"
-)
+COASTRP_path = os.path.join(
+    output_dir,
+    "large_datasets/COAST-RP/COAST-RP.nc")
+
+COASTRP = xr.open_dataset(COASTRP_path)
 
 # Coordinates of storm tide stations
 x = COASTRP["station_x_coordinate"].values
@@ -383,10 +412,19 @@ for col, sig in sigfig_map.items():
     if col in BEWARE_inputs.columns:
         BEWARE_inputs[col] = BEWARE_inputs[col].apply(lambda x: round_to_sigfig(x, sig))
 
+BEWARE_inputs.rename(columns={"transect_i": "transect_id"}, inplace=True)
+
 
 # %%
 BEWARE_inputs
 
 # %%
 # BEWARE_inputs.to_csv("../data/processed/Atoll_BEWARE_inputs.csv")
-BEWARE_inputs.to_parquet("../data/processed/Atoll_BEWARE_inputs.parquet", index=False)
+output_path = os.path.join(
+    output_dir,
+    "Atoll_BEWARE_inputs.parquet",
+)
+
+BEWARE_inputs.to_parquet(output_path, index=False, engine='pyarrow')
+
+# %%

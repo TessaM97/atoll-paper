@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 # %%
 # Load the shapefile
-shapefile_path = "../data/Shapefiles/Atoll_transects.shp"
+shapefile_path = "../data/Shapefiles/Atoll_transects_240725.shp"
 gdf = gpd.read_file(shapefile_path)
 
 # Display the first few rows of attribute data
@@ -113,6 +113,21 @@ m
 
 
 # %%
+import os
 # Saving to file
+output_dir = "/Users/tessamoller/Documents/atoll-slr-paper-data/data/processed"
+
+file_path_output = os.path.join(
+    output_dir,
+    "Atoll_transects_centroids.shp",
+)
 gdf = gdf.drop(columns="centroid")  # centroids is in EPSG3857, in meters
-gdf.to_file("../data/processed/Atoll_transects_centroids.shp")
+gdf.to_file(file_path_output)
+
+# %%
+file_path_output
+
+# %%
+gdf
+
+# %%

@@ -207,6 +207,7 @@ for h0l0_val, cf_val, beta_beach_val, beta_fore_val in itertools.product(
 
 # %%
 # Subplots according to H0
+plot_count = 0
 
 # Define fixed colormap
 color_norm = mcolors.Normalize(vmin=0, vmax=1)
@@ -300,8 +301,123 @@ for h0l0_val, cf_val, beta_beach_val, beta_fore_val in itertools.product(
     axes[-1].legend(title="W_reef", fontsize=8)
 
     plt.tight_layout(rect=[0, 0, 1, 0.92])  # leave space for suptitle
+    plot_count += 1
     plt.show()
 
+
+# %%
+print(f"Total number of figures plotted: {plot_count}")
+
+# %%
+# Define fixed colormap
+color_norm = mcolors.Normalize(vmin=0, vmax=1)
+scalar_map = cm.ScalarMappable(norm=color_norm, cmap="tab10")
+
+# Parameter groups
+H0L0_vals = [0.005, 0.025, 0.05]
+Cf_vals = [0.01, 0.05, 0.1]
+Beta_Beach_vals = [0.05, 0.1, 0.2]
+Beta_ForeReef_vals = [0.05, 0.1, 0.5]
+
+plot_count = 0
+
+# Loop over all combinations
+for h0l0_val, cf_val, beta_beach_val, beta_fore_val in itertools.product(
+    H0L0_vals, Cf_vals, Beta_Beach_vals, Beta_ForeReef_vals
+):
+    # 🔴 Skip unless Cf == 0.05 and Beta_Beach == 0.10
+    if not (np.isclose(cf_val, 0.05) and np.isclose(beta_beach_val, 0.10)):
+        continue
+
+    # Filter base and extended data
+    base_mask = (
+        np.isclose(df["H0L0"], h0l0_val)
+        & np.isclose(df["Cf"], cf_val)
+        & np.isclose(df["Beta_Beach"], beta_beach_val)
+        & np.isclose(df["beta_ForeReef"], beta_fore_val)
+    )
+    df_filtered = df[base_mask]
+    df_ext_filtered = df_extended[
+        (df_extended["H0L0"] == h0l0_val)
+        & (df_extended["Cf"] == cf_val)
+        & (df_extended["Beta_Beach"] == beta_beach_val)
+        & (df_extended["beta_ForeReef"] == beta_fore_val)
+    ]
+
+    if df_filtered.empty:
+        continue
+
+    # Unique H0 values for subplotting
+    unique_H0s = sorted(df_filtered["H0"].unique())
+    n_H0s = len(unique_H0s)
+
+    fig, axes = plt.subplots(1, n_H0s, figsize=(5 * n_H0s, 5), sharey=True, sharex=True)
+    if n_H0s == 1:
+        axes = [axes]  # ensure iterable
+
+    # Get consistent color mapping for W_reef
+    unique_W_reef = sorted(df_filtered["W_reef"].unique())
+    cmap = cm.get_cmap("viridis", len(unique_W_reef))
+    color_dict = {w: cmap(i) for i, w in enumerate(unique_W_reef)}
+
+    for ax, h_val in zip(axes, unique_H0s):
+        # Filter for this H0
+        df_h = df_filtered[df_filtered["H0"] == h_val]
+        df_ext_h = df_ext_filtered[df_ext_filtered["H0"] == h_val]
+
+        # Group by W_reef
+        grouped_orig = df_h.groupby("W_reef")
+        grouped_ext = df_ext_h.groupby("W_reef")
+
+        for w_reef, group_df_orig in grouped_orig:
+            color = color_dict[w_reef]
+            group_df_orig = group_df_orig.sort_values("eta")
+            ax.plot(
+                group_df_orig["eta"],
+                group_df_orig["R2p"],
+                "o",
+                label=f"W={w_reef:.0f}",
+                alpha=0.6,
+                color=color,
+            )
+
+            if w_reef in grouped_ext.groups:
+                group_df_ext = grouped_ext.get_group(w_reef).sort_values("eta")
+                ax.plot(
+                    group_df_ext["eta"],
+                    group_df_ext["R2p"],
+                    "-",
+                    alpha=0.8,
+                    color=color,
+                )
+
+        ax.set_title(f"H₀ = {h_val:.2f}", fontsize=12)
+        ax.grid(True)
+
+    axes[0].set_ylabel("R2pIndex (m)", fontsize=12)
+    for ax in axes:
+        ax.set_xlabel("η₀ (m)", fontsize=12)
+
+    fig.suptitle(
+        f"R2pIndex vs η₀ by H₀\nH0/L0={h0l0_val}, Cf={cf_val}, β_Beach={beta_beach_val}, β_ForeReef={beta_fore_val}",
+        fontsize=14,
+    )
+    axes[-1].legend(title="W_reef", fontsize=8)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
+       # === Save figure as PDF ===
+    filename = (
+        f"plot_H0L0_{h0l0_val}_Cf_{cf_val}_BetaBeach_{beta_beach_val}_BetaForeReef_{beta_fore_val}.pdf"
+    )
+    fig.savefig('/Users/tessamoller/Documents/atoll-slr-paper-manuscript/Figures/Suppl_Figures/BEWARE_Extension/' + filename, bbox_inches='tight')
+    plt.show()
+
+    plot_count += 1
+
+print(f"Total number of figures plotted: {plot_count}")
+
+
+# %%
 
 # %% [markdown]
 # ### Save extended BEWARE dataframe as new netcdf file

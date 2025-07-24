@@ -2,9 +2,9 @@
 authors = [
     { name = "Tessa Möller", email = "moeller@iiasa.ac.at"},
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 dependencies = [
-    "pre-commit>=3.3.1",
+    "pre-commit==3.3.1",
     "jupyterlab>=4.0.0",
     "jupytext>=1.15.2",
 ]
@@ -37,6 +37,7 @@ xarray = ">=2025.6.1,<2026"
 geopy = ">=2.4.1,<3"
 cartopy = ">=0.24.0,<0.25"
 fastparquet = ">=2024.11.0,<2025"
+pyarrow = ">=20.0.0,<21"
 
 [tool.jupytext]
 formats = "ipynb,py:percent"
