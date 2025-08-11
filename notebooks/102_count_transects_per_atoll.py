@@ -43,3 +43,15 @@ average_transects_per_atoll = transects_per_atoll.mean()
 print(f"Average number of transects per FID_GADM: {average_transects_per_atoll:.2f}")
 
 # %%
+key_cols = ["eta0"]
+
+df_combined = pd.concat(
+    [df, df_extended],
+    ignore_index=True
+).drop_duplicates(subset=key_cols, ignore_index=True)
+df_combined
+
+# %%
+import pandas as pd
+
+# %%

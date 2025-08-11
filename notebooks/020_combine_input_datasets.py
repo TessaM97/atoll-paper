@@ -163,6 +163,8 @@ transect_ids = gdf["transect_i"].values
 
 # Quantiles of interest
 target_quantiles = [0.17, 0.5, 0.83]
+target_years = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100, 2110, 2120,
+       2130, 2140, 2150]
 
 # Container to hold all rows
 records = []
@@ -198,9 +200,11 @@ for _, row in slr_file_df.iterrows():
         q_idx = np.where(np.isclose(quantiles, q))[0][0]
 
         for y_idx, year in enumerate(years):
+            if year not in target_years:
+                continue  # 🔴 Skip unwanted years
+
             slr_slice = slr_values.isel(quantiles=q_idx, years=y_idx).values.astype(
-                float
-            )
+                float)
 
             # Handle fill values if needed
             fill_val = slr_values.attrs.get("_FillValue", np.nan)
@@ -376,7 +380,7 @@ def round_to_sigfig(x, sigfigs):
 
 # Define columns and required significant figures
 sigfig_map = {
-    "eta_SLR": 1,
+    "eta_SLR": 2,
     "eta_combined_rp1": 2,
     "eta_combined_rp10": 2,
     "eta_combined_rp100": 2,
@@ -426,5 +430,3 @@ output_path = os.path.join(
 )
 
 BEWARE_inputs.to_parquet(output_path, index=False, engine='pyarrow')
-
-# %%

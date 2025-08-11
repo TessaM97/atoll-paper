@@ -29,7 +29,7 @@ from tqdm import tqdm
 tqdm.pandas()
 
 # Load BEWARE dataset
-file_path = "/Users/tessamoeller/Documents/atoll_paper/data/BEWARE_Database.nc"
+file_path = "/Users/tessamoller/Documents/atoll-slr-paper-data/data/BEWARE_Database.nc"
 dataset = nc.Dataset(file_path)
 
 # Extract variables
@@ -98,7 +98,7 @@ def match_with_eta(row, eta_value):
         valid.Cf[best_idx],
         valid.beta_Beach[best_idx],
         valid.H0L0[best_idx],
-        row.get("transect_i", np.nan),
+        row.get("transect_id", np.nan),
     )
 
 
@@ -113,9 +113,14 @@ def apply_all_matches(row):
         # Base output name, e.g., from "R2pIndex_combined_rp1" → "rp1"
         label = output_col.split("_")[-1]
 
-        results["transect_i"] = row["transect_i"]
+        results["transect_id"] = row["transect_id"]
         results[output_col] = r2p
         results[f"score_{label}"] = score
+        results['year'] = row["year"]
+        results['scenario'] = row["scenario"]
+        results['confidence'] = row["confidence"]
+        results['quantile'] = row["quantile"]
+        
     # results[f"Cf_{label}"] = cf
     # results[f"beta_Beach_{label}"] = beta_beach
     # results[f"H0L0_{label}"] = h0l0
@@ -127,12 +132,13 @@ def apply_all_matches(row):
 # %%
 # Load combined input data
 
-inputs = pd.read_parquet("../data/processed/Atoll_BEWARE_inputs.parquet")
+#inputs = pd.read_parquet("../data/Atoll_BEWARE_inputs.parquet")
+inputs = pd.read_parquet("/Users/tessamoller/Documents/atoll-slr-paper-data/data/Atoll_BEWARE_inputs.parquet")
 
 # Select one scenario/timeframe
 inputs = inputs[
     (inputs["scenario"] == "ssp119")
-    & (inputs["year"] == 2080)
+    & (inputs["year"].isin([2080,2090]))
     & (inputs["quantile"] == 0.50)
 ]
 # inputs = inputs.iloc[:10, ]
@@ -141,21 +147,31 @@ inputs = inputs[
 
 # Apply matching function
 results = inputs.progress_apply(apply_all_matches, axis=1, result_type="expand")
-results["transect_i"] = results["transect_i"].astype(int)
+results["transect_id"] = results["transect_id"].astype(int)
 results
 # Add to GeoDataFrame
 
 
 outputs = pd.merge(
-    inputs[["transect_i", "FID_GADM", "Atoll_FID"]],
+    inputs[["transect_id", "FID_GADM", "Atoll_FID", "year", "scenario", "confidence", "quantile"]],
     results,
-    on="transect_i",
+    on=["transect_id", "FID_GADM", "Atoll_FID", "year", "scenario", "confidence", "quantile"],
     how="left",
 )
 outputs
 
 # Close dataset
 dataset.close()
+
+# %%
+#print(results.columns, inputs.columns)
+outputs
+
+# %%
+#outputs
+#79604
+#11372
+outputs[outputs['transect_id']==0]
 
 # %%
 ## Check how much it deviates
