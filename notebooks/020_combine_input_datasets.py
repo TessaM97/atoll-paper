@@ -234,6 +234,26 @@ df_slr_all = pd.DataFrame.from_records(records)
 print(df_slr_all.head())
 
 
+# %%
+# Step 1: Filter original DataFrame
+filtered = df_slr_all[
+    (df_slr_all["confidence"] == "medium")
+    & (df_slr_all["scenario"] == "ssp119")
+     & (df_slr_all["year"] == 2020)
+    & (df_slr_all["quantile"] == 0.50)
+]
+
+# Step 2: Create modified copy
+modified = filtered.copy()
+modified["year"] = 2005
+modified["eta_SLR"] = 0.0
+modified["scenario"] = 'baseline'
+modified
+# Step 3: Append to original DataFrame
+
+df_slr_all = pd.concat([df_slr_all, modified], ignore_index=True)
+
+
 # %% [markdown]
 # ### Load COAST-RP
 
@@ -430,3 +450,5 @@ output_path = os.path.join(
 )
 
 BEWARE_inputs.to_parquet(output_path, index=False, engine='pyarrow')
+
+# %%
