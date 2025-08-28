@@ -13,16 +13,35 @@
 # ---
 
 # %%
-# %%
+import sys
+from pathlib import Path
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
-import netCDF4 as nc
 import numpy as np
 from netCDF4 import Dataset
 
+# %%
+# Add project root to Python path
+sys.path.append(str(Path().resolve().parent))
+from src.settings import DATA_DIR, RAW_DIR
+
+print("Using data directory:", DATA_DIR)
+
+# %% [markdown]
+# ### Load and plot one IPCC regional SLR file
+# Note that you need to have first downloaded the data. 
+# To do so, you can execute `102_download_AR6_SLR_projections.ipnyb` 
+# under `/additional_notebooks`
+
+# %%
 # Load NetCDF
-nc_path = "/Users/tessamoeller/Documents/atoll_paper/data/AR6_regional_SLR_projections/confidence_output_files/low_confidence/ssp585/total_ssp585_low_confidence_values.nc"
+nc_path = (
+    RAW_DIR
+    / "external/AR6_regional_SLR_projections"
+    / "confidence_output_files/low_confidence"
+    / "ssp585/total_ssp585_low_confidence_values.nc"
+)
 nc = Dataset(nc_path, mode="r")
 
 # Extract variables
@@ -74,6 +93,6 @@ cb = plt.colorbar(sc, label="SLR (m)")
 plt.title("Sea Level Rise (m) in 2150 - Median (0.5 Quantile)")
 plt.show()
 
-# %%
-# Note to self! IPCC SLR Projections are not on a lat/lon 2D grid but instead lat/lon are both
+# %% [markdown]
+# Note: IPCC SLR Projections are not on a lat/lon 2D grid but instead lat/lon are both
 # 1D arrays of length locations

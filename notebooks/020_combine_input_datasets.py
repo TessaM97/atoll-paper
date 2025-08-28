@@ -15,24 +15,30 @@
 # %%
 import glob
 import os
+import sys
+from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import xarray as xr
-from geopy.distance import geodesic
 from scipy.spatial import cKDTree
+
+# %%
+# Add project root to Python path
+sys.path.append(str(Path().resolve().parent))
+from src.settings import DATA_DIR, INTERIM_DIR, RAW_DIR
+
+print("Using data directory:", DATA_DIR)
+
+# %% [markdown]
+# ## Combine input datasets to create input dataframe
 
 # %% [markdown]
 # ### Load Shapefile
 
 # %%
-output_dir = "/Users/tessamoller/Documents/atoll-slr-paper-data/data"
-
-shapefile_path = os.path.join(
-    output_dir,
-    "processed/Atoll_transects_centroids.shp",
-)
+shapefile_path = os.path.join(INTERIM_DIR, "Shapefiles/Atoll_transects_centroids.shp")
 
 gdf = gpd.read_file(shapefile_path)
 gdf
@@ -44,12 +50,12 @@ gdf
 # Load datasets
 
 COWCLIP_H0_path = os.path.join(
-    output_dir,
-    "processed/COWCLIP_ensemble_mean_Hs_1995_2014.nc")
+    INTERIM_DIR, "external/COWCLIP/COWCLIP_ensemble_mean_Hs_1995_2014.nc"
+)
 
 COWCLIP_Tm_path = os.path.join(
-    output_dir,
-    "processed/COWCLIP_ensemble_mean_Tm_1995_2014.nc")
+    INTERIM_DIR, "external/COWCLIP//COWCLIP_ensemble_mean_Tm_1995_2014.nc"
+)
 
 
 COWCLIP_H0 = xr.open_dataset(COWCLIP_H0_path)
@@ -72,6 +78,7 @@ def calculate_wave_length_L0(Tm, g=9.81):
     """Compute deepwater wavelength (L0) using linear wave theory."""
     return float((g * Tm**2) / (2 * np.pi))
 
+
 # Function to extract nearest value for all centroids
 def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon):
     def find_nearest_index(array, value):
@@ -93,14 +100,13 @@ def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon):
                     "transect_i": gdf.iloc[i]["transect_i"],
                     "quantile": q,
                     "H0": hs_val,
-                    "Tm": tm_val, 
-                    "L0" : l0_val,
-                    "H0L0":  hs_val / l0_val if tm_val > 0 else np.nan,
+                    "Tm": tm_val,
+                    "L0": l0_val,
+                    "H0L0": hs_val / l0_val if tm_val > 0 else np.nan,
                 }
             )
 
     return pd.DataFrame.from_records(records)
-
 
 
 # Apply extraction
@@ -114,8 +120,8 @@ wave_df
 # Base path to search in
 
 base_dir = os.path.join(
-    output_dir,
-    "large_datasets/AR6_regional_SLR_projections/confidence_output_files")
+    RAW_DIR, "external/AR6_regional_SLR_projections/confidence_output_files"
+)
 
 # Recursive glob pattern to find files starting with "total_ssp" and ending in ".nc"
 pattern = os.path.join(base_dir, "**", "total_ssp*.nc")
@@ -163,8 +169,22 @@ transect_ids = gdf["transect_i"].values
 
 # Quantiles of interest
 target_quantiles = [0.17, 0.5, 0.83]
-target_years = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100, 2110, 2120,
-       2130, 2140, 2150]
+target_years = [
+    2020,
+    2030,
+    2040,
+    2050,
+    2060,
+    2070,
+    2080,
+    2090,
+    2100,
+    2110,
+    2120,
+    2130,
+    2140,
+    2150,
+]
 
 # Container to hold all rows
 records = []
@@ -204,7 +224,8 @@ for _, row in slr_file_df.iterrows():
                 continue  # 🔴 Skip unwanted years
 
             slr_slice = slr_values.isel(quantiles=q_idx, years=y_idx).values.astype(
-                float)
+                float
+            )
 
             # Handle fill values if needed
             fill_val = slr_values.attrs.get("_FillValue", np.nan)
@@ -239,7 +260,7 @@ print(df_slr_all.head())
 filtered = df_slr_all[
     (df_slr_all["confidence"] == "medium")
     & (df_slr_all["scenario"] == "ssp119")
-     & (df_slr_all["year"] == 2020)
+    & (df_slr_all["year"] == 2020)
     & (df_slr_all["quantile"] == 0.50)
 ]
 
@@ -247,7 +268,7 @@ filtered = df_slr_all[
 modified = filtered.copy()
 modified["year"] = 2005
 modified["eta_SLR"] = 0.0
-modified["scenario"] = 'baseline'
+modified["scenario"] = "baseline"
 modified
 # Step 3: Append to original DataFrame
 
@@ -258,53 +279,11 @@ df_slr_all = pd.concat([df_slr_all, modified], ignore_index=True)
 # ### Load COAST-RP
 
 # %%
-COASTRP_path = os.path.join(
-    output_dir,
-    "large_datasets/COAST-RP/COAST-RP.nc")
-
-COASTRP = xr.open_dataset(COASTRP_path)
-
-# Extract coordinates and storm tide data
-x = COASTRP["station_x_coordinate"].values  # longitudes
-y = COASTRP["station_y_coordinate"].values  # latitudes
-storm_tide = COASTRP["storm_tide_rp_0001"].values  # storm tide values
-
-# Apply fill mask (if needed)
-if "_FillValue" in COASTRP["storm_tide_rp_0001"].attrs:
-    fill_value = COASTRP["storm_tide_rp_0001"]._FillValue
-    storm_tide = np.where(storm_tide == fill_value, np.nan, storm_tide)
-
-# Build KD-tree from station coordinates
-station_coords = np.column_stack((y, x))  # (lat, lon)
-tree = cKDTree(station_coords)
-
-# Extract centroid coordinates from GeoDataFrame
-centroid_coords = np.array([(geom.y, geom.x) for geom in gdf.geometry])  # (lat, lon)
-
-# Query nearest station for each centroid
-distances_deg, nearest_idx = tree.query(centroid_coords)
-
-# Convert to km using geopy
-distances_km = [
-    geodesic((lat1, lon1), station_coords[idx]).km
-    for (lat1, lon1), idx in zip(centroid_coords, nearest_idx)
-]
-
-# Assign storm tide and distances to GeoDataFrame
-gdf["storm_tide_rp_0001_m"] = storm_tide[nearest_idx]
-gdf["dist_to_station_km"] = distances_km
-
-# Preview results
-print(gdf[["storm_tide_rp_0001_m", "dist_to_station_km"]].head())
-
-
-# %%
 # Open COAST-RP dataset
-COASTRP_path = os.path.join(
-    output_dir,
-    "large_datasets/COAST-RP/COAST-RP.nc")
+COASTRP_path = os.path.join(RAW_DIR, "external/COAST-RP/COAST-RP.nc")
 
 COASTRP = xr.open_dataset(COASTRP_path)
+
 
 # Coordinates of storm tide stations
 x = COASTRP["station_x_coordinate"].values
@@ -443,12 +422,9 @@ BEWARE_inputs.rename(columns={"transect_i": "transect_id"}, inplace=True)
 BEWARE_inputs
 
 # %%
-# BEWARE_inputs.to_csv("../data/processed/Atoll_BEWARE_inputs.csv")
 output_path = os.path.join(
-    output_dir,
+    INTERIM_DIR,
     "Atoll_BEWARE_inputs.parquet",
 )
 
-BEWARE_inputs.to_parquet(output_path, index=False, engine='pyarrow')
-
-# %%
+BEWARE_inputs.to_parquet(output_path, index=False, engine="pyarrow")

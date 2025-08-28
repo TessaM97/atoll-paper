@@ -14,9 +14,34 @@
 
 # %%
 import os
+import sys
 import urllib.request
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
+# %%
+# Add project root (two levels up from current notebook folder)
+project_root = Path().resolve().parents[1]
+sys.path.append(str(project_root))
+from src.settings import DATA_DIR, RAW_DIR
+
+# Paths
+directory_path = RAW_DIR / "external/COWCLIP"
+print("Using data directory:", DATA_DIR)
+
+# %% [markdown]
+# ### Automatic Download of Raw COWCLIP Files
+#
+# This script automatically downloads the required **COWCLIP2 hindcast datasets** from the Australian Ocean Data Network (AODN) THREDDS server:
+# [https://thredds.aodn.org.au/thredds/catalog/CSIRO/Climatology/COWCLIP2/hindcasts/Monthly/catalog.html](https://thredds.aodn.org.au/thredds/catalog/CSIRO/Climatology/COWCLIP2/hindcasts/Monthly/catalog.html)
+#
+# #### Notes
+# - Only the relevant variables (e.g., **Tm** and **Ds**) are downloaded and organized locally.
+# - Temporary storage may be needed during the download process, as the datasets include multiple files in nested directories.
+# - Please review the **license and citation information** provided by CSIRO before using the datasets.
+#
+
+# %%
 BASE_CATALOGS = {
     "Hs": "https://thredds.aodn.org.au/thredds/catalog/CSIRO/Climatology/COWCLIP2/hindcasts/Annual/Hs/catalog.xml",
     "Tm": "https://thredds.aodn.org.au/thredds/catalog/CSIRO/Climatology/COWCLIP2/hindcasts/Annual/Tm/catalog.xml",
@@ -57,7 +82,7 @@ def download_datasets(variable, catalog_url):
     urls = get_dataset_urls(catalog_url)
     print(f"✅ Found {len(urls)} .nc files for {variable}.")
 
-    save_dir = f"../data/COWCLIP/{variable}"
+    save_dir = directory_path / variable
     os.makedirs(save_dir, exist_ok=True)
 
     for i, path in enumerate(urls, 1):
@@ -74,6 +99,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# %%

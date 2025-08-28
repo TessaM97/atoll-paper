@@ -13,13 +13,23 @@
 # ---
 
 # %%
+import sys
+from pathlib import Path
+
 import folium
 import geopandas as gpd
 import matplotlib.pyplot as plt
 
 # %%
+# Add project root to Python path
+sys.path.append(str(Path().resolve().parent))
+from src.settings import DATA_DIR, INTERIM_DIR, RAW_DIR
+
+print("Using data directory:", DATA_DIR)
+
+# %%
 # Load the shapefile
-shapefile_path = "../data/Shapefiles/Atoll_transects_240725.shp"
+shapefile_path = RAW_DIR / "Shapefiles/Atoll_transects_240725.shp"
 gdf = gpd.read_file(shapefile_path)
 
 # Display the first few rows of attribute data
@@ -58,34 +68,6 @@ print(f"Longitude range: {lons.min():.2f} to {lons.max():.2f}")
 
 
 # %%
-# No longer needed: Reproject lon to 0 to 360
-
-## Reproject to EPSG:3857 for accurate centroid calculation
-# gdf_reproj = gdf
-
-## Convert centroids to WGS84 (EPSG:4326)
-# centroids_WGS84 = gdf_reproj['centroid'].to_crs(epsg=4326)
-
-# Extract and adjust longitudes to [0, 360]
-# adjusted_geometries = []
-# for point in centroids_WGS84:
-#    lon, lat = point.x, point.y
-#    lon = (lon + 360) % 360  # shift to [0, 360]
-#    adjusted_geometries.append(Point(lon, lat))
-
-# Replace geometry with adjusted geometries
-# gdf_reproj = gdf_reproj.set_geometry(adjusted_geometries)
-
-# Extract lat/lon for reporting
-# lats = gdf_reproj.geometry.y.values
-# lons = gdf_reproj.geometry.x.values
-
-# Print ranges to understand coordinate "shape"
-# print(f"\nLatitude range: {lats.min():.2f} to {lats.max():.2f}")
-# print(f"Longitude range: {lons.min():.2f} to {lons.max():.2f}")
-
-
-# %%
 # Plot the centroids
 fig, ax = plt.subplots(figsize=(10, 6))
 gdf.plot(ax=ax, color="blue", markersize=5, alpha=0.7)
@@ -113,21 +95,10 @@ m
 
 
 # %%
-import os
 # Saving to file
-output_dir = "/Users/tessamoller/Documents/atoll-slr-paper-data/data/processed"
-
-file_path_output = os.path.join(
-    output_dir,
-    "Atoll_transects_centroids.shp",
-)
+file_path_output = INTERIM_DIR / "Shapefiles/Atoll_transects_centroids.shp"
 gdf = gdf.drop(columns="centroid")  # centroids is in EPSG3857, in meters
 gdf.to_file(file_path_output)
 
 # %%
-file_path_output
-
-# %%
 gdf
-
-# %%

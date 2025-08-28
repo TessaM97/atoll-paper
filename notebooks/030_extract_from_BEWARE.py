@@ -13,75 +13,100 @@
 # ---
 
 # %%
+import os
+import sys
+import time
+from pathlib import Path
+
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+# %%
+# Add project root (two levels up from current notebook folder)
+project_root = Path(__file__).resolve().parents[1]
+sys.path.append(str(project_root))
+from src.settings import DATA_DIR, INTERIM_DIR, PROCESSED_DIR, RAW_DIR
+
+# Paths
+directory_path = RAW_DIR / "external/COWCLIP"
+print("Using data directory:", DATA_DIR)
+
+# Inputs
+atoll_inputs_path = INTERIM_DIR / "Atoll_BEWARE_inputs.parquet"
+BEWARE_extended_path = INTERIM_DIR / "BEWARE_Database_extended_avg.nc"
+# Outputs
+results_csv = PROCESSED_DIR / "Atoll_BEWARE_processed_outputs.csv"
+results_parquet = PROCESSED_DIR / "Atoll_BEWARE_processed_outputs.parquet"
+
+
 # %% [markdown]
-# ### Load and Prepare BEWARE
+# ### BEWARE Matching Script
 #
-# #### Select Cf = 0.05
-# #### Select beta_Beach = 0.10
+# This script processes coastal flood hazard inputs by matching them against 
+# the **extended BEWARE framework database**.
+# The workflow identifies the best-fitting **R2pIndex** values for given hydrodynamic and geomorphic parameters across transects and scenarios.
+#
+# #### Key Steps
+# 1. **Load BEWARE Database**:
+#    Opens the extended BEWARE NetCDF database and converts it into a structured NumPy array for fast matching.
+#
+# 2. **Filter Inputs**:
+#    Reads pre-processed transect-level input data (`Atoll_BEWARE_inputs.parquet`) and restricts it to relevant confidence–scenario combinations (e.g., `"medium-ssp585"`, `"low-ssp585"`).
+#
+# 3. **Efficient Matching**:
+#    - For each row, eta values are pre-filtered within a ±0.1 range to reduce computation.
+#    - A normalized distance score is calculated across parameters (`W_reef`, `beta_f`, `H0`, `H0L0`, `eta0`).
+#    - The closest match’s **R2pIndex** is selected.
+#
+# 4. **Batch Processing**:
+#    Vectorized functions and progress bars (`tqdm`) are used for efficient row-wise application.
+#
+# 5. **Output Results**:
+#    Matched results are merged with metadata and saved into both `.parquet` and `.csv` formats:
+#    - `Atoll_BEWARE_processed_outputs_2020-2150.parquet`
+#    - `Atoll_BEWARE_processed_outputs_2020-2150.csv`
+#
+# #### Usage
+# - Suggested to run as (`pixi run python notebooks/030_extract_from_BEWARE.py`) from project-root.
+# - Designed for **high-volume computations**; input filtering ensures speed and avoids unnecessary calculations.
+#
+# #### Notes
+# - Requires local access to the **extended BEWARE NetCDF database** (`BEWARE_Database_extended_avg.nc`).
+# - Progress and runtime are printed during execution for monitoring.
+#
+
 
 # %%
-# Enable tqdm with pandas apply
-tqdm.pandas()
-
-# Load BEWARE dataset
-file_path = "/Users/tessamoller/Documents/atoll-slr-paper-data/data/BEWARE_Database.nc"
-dataset = nc.Dataset(file_path)
-
-# Extract variables
-W_reef_db = dataset.variables["W_reef"][:]
-beta_foreReef_db = dataset.variables["beta_ForeReef"][:]
-H0_db = dataset.variables["H0"][:]
-eta0_db = dataset.variables["eta0"][:]
-R2pIndex_db = dataset.variables["R2pIndex"][:]
-Cf_db = dataset.variables["Cf"][:]
-beta_beach_db = dataset.variables["beta_Beach"][:]
-H0L0_db = dataset.variables["H0L0"][:]
-
-# Convert to structured array
-beware_array = np.rec.fromarrays(
-    [
-        W_reef_db,
-        beta_foreReef_db,
-        H0_db,
-        eta0_db,
-        R2pIndex_db,
-        Cf_db,
-        beta_beach_db,
-        H0L0_db,
-    ],
-    names="W_reef,beta_ForeReef,H0,eta0,R2pIndex,Cf,beta_Beach,H0L0",
-)
-
-# Define eta columns and result column names
-eta_dict = {
-    "eta_SLR": "R2pIndex_SLR",
-    "eta_combined_rp1": "R2pIndex_combined_rp1",
-    "eta_combined_rp10": "R2pIndex_combined_rp10",
-    "eta_combined_rp100": "R2pIndex_combined_rp100",
-}
-
-
-# Matching function for a given eta value
-def match_with_eta(row, eta_value):
+def match_with_eta_vectorized(W_reef, beta_f, H0, H0L0, eta_value):
+    """
+    Find the best matching R2pIndex in beware_array based on differences
+    of given parameters (W_reef, beta_f, H0, H0L0, eta_value), prioritizing H0, eta, and W_reef.
+    """
+    # Filter valid entries
     valid = beware_array[
         (beware_array.W_reef > 1)
         & (np.isclose(beware_array.Cf, 0.05))
         & (np.isclose(beware_array.beta_Beach, 0.10))
     ]
+    if len(valid) == 0:
+        return np.nan
+
+    # Apply eta filter +- 0.1
+    eta_min = eta_value - 0.1
+    eta_max = eta_value + 0.1
+    valid = valid[(valid.eta0 >= eta_min) & (valid.eta0 <= eta_max)]
 
     if len(valid) == 0:
-        return np.nan, np.nan
+        return np.nan
 
-    d_beta = np.abs(valid.beta_ForeReef - row["beta_f"])
-    d_H0 = np.abs(valid.H0 - row["H0"])
-    d_H0L0 = np.abs(valid.H0L0 - row["H0L0"])
+    # Calculate normalized distances for each parameter to score matches
+    d_beta = np.abs(valid.beta_ForeReef - beta_f)
+    d_H0 = np.abs(valid.H0 - H0)
+    d_H0L0 = np.abs(valid.H0L0 - H0L0)
     d_eta = np.abs(valid.eta0 - eta_value)
-    d_Wreef = np.abs(valid.W_reef - row["W_reef"])
+    d_Wreef = np.abs(valid.W_reef - W_reef)
 
     scores = (
         d_beta / (np.max(d_beta) + 1e-6)
@@ -90,152 +115,118 @@ def match_with_eta(row, eta_value):
         + d_eta / (np.max(d_eta) + 1e-6)
         + d_Wreef / (np.max(d_Wreef) + 1e-6)
     )
-
-    best_idx = np.argmin(scores)
-    return (
-        valid.R2pIndex[best_idx],
-        scores[best_idx],
-        valid.Cf[best_idx],
-        valid.beta_Beach[best_idx],
-        valid.H0L0[best_idx],
-        row.get("transect_id", np.nan),
-    )
+    # Return R2pIndex with minimal combined distance
+    return valid.R2pIndex[np.argmin(scores)]
 
 
-# Apply function with progress bar
+# %%
+# Map eta columns to their respective output column names
+eta_dict = {
+    "eta_combined_rp1": "R2pIndex_combined_rp1",
+    "eta_combined_rp10": "R2pIndex_combined_rp10",
+    "eta_combined_rp100": "R2pIndex_combined_rp100",
+}
+
+
 def apply_all_matches(row):
-    results = {}
-
+    """
+    For each row, match all eta values and return corresponding R2pIndex results.
+    """
+    results = {
+        "transect_id": row["transect_id"],
+        "year": row["year"],
+        "confidence": row["confidence"],
+        "scenario": row["scenario"],
+        "quantile": row["quantile"],
+        "confidence": row["confidence"],
+        "FID_GADM": row["FID_GADM"],
+    }
     for eta_col, output_col in eta_dict.items():
-        eta_val = row[eta_col]
-        r2p, score, cf, beta_beach, h0l0, transect_i = match_with_eta(row, eta_val)
-
-        # Base output name, e.g., from "R2pIndex_combined_rp1" → "rp1"
-        label = output_col.split("_")[-1]
-
-        results["transect_id"] = row["transect_id"]
-        results[output_col] = r2p
-        results[f"score_{label}"] = score
-        results['year'] = row["year"]
-        results['scenario'] = row["scenario"]
-        results['confidence'] = row["confidence"]
-        results['quantile'] = row["quantile"]
-        
-    # results[f"Cf_{label}"] = cf
-    # results[f"beta_Beach_{label}"] = beta_beach
-    # results[f"H0L0_{label}"] = h0l0
-    #  results[f"transect_i_{label}"] = transect_i
-
+        results[output_col] = match_with_eta_vectorized(
+            row["W_reef"], row["beta_f"], row["H0"], row["H0L0"], row[eta_col]
+        )
     return pd.Series(results)
 
 
 # %%
-# Load combined input data
+def main():
+    global beware_array
 
-#inputs = pd.read_parquet("../data/Atoll_BEWARE_inputs.parquet")
-inputs = pd.read_parquet("/Users/tessamoller/Documents/atoll-slr-paper-data/data/Atoll_BEWARE_inputs.parquet")
+    # Determine script directory to load data relative to script location
+    home_dir = os.path.dirname(os.path.realpath(__file__))
+    out_dir = "/hdrive/all_users/moeller/MyDocuments/atoll-slr-paper/data/processed/"
 
-# Select one scenario/timeframe
-inputs = inputs[
-    (inputs["scenario"] == "ssp119")
-    & (inputs["year"].isin([2080,2090]))
-    & (inputs["quantile"] == 0.50)
-]
-# inputs = inputs.iloc[:10, ]
+    # Load BEWARE NetCDF database and convert to structured numpy array
+    ds = nc.Dataset(BEWARE_extended_path)
 
-# Apply BEWARE to input data
-
-# Apply matching function
-results = inputs.progress_apply(apply_all_matches, axis=1, result_type="expand")
-results["transect_id"] = results["transect_id"].astype(int)
-results
-# Add to GeoDataFrame
-
-
-outputs = pd.merge(
-    inputs[["transect_id", "FID_GADM", "Atoll_FID", "year", "scenario", "confidence", "quantile"]],
-    results,
-    on=["transect_id", "FID_GADM", "Atoll_FID", "year", "scenario", "confidence", "quantile"],
-    how="left",
-)
-outputs
-
-# Close dataset
-dataset.close()
-
-# %%
-#print(results.columns, inputs.columns)
-outputs
-
-# %%
-#outputs
-#79604
-#11372
-outputs[outputs['transect_id']==0]
-
-# %%
-## Check how much it deviates
-
-# Ensure R2pIndex_SLR is numeric
-outputs["R2pIndex_SLR"] = pd.to_numeric(outputs["R2pIndex_SLR"], errors="coerce")
-
-# Group by Atoll_FID and compute stats on R2pIndex_SLR
-r2p_summary = (
-    outputs.groupby("Atoll_FID")["R2pIndex_SLR"]
-    .agg(
-        count="count",
-        mean="mean",
-        std="std",
-        min="min",
-        max="max",
-        range=lambda x: x.max() - x.min(),
+    beware_array = np.rec.fromarrays(
+        [
+            ds.variables["W_reef"][:],
+            ds.variables["beta_ForeReef"][:],
+            ds.variables["H0"][:],
+            ds.variables["eta0"][:],
+            ds.variables["R2pIndex"][:],
+            ds.variables["Cf"][:],
+            ds.variables["beta_Beach"][:],
+            ds.variables["H0L0"][:],
+        ],
+        names="W_reef,beta_ForeReef,H0,eta0,R2pIndex,Cf,beta_Beach,H0L0",
     )
-    .reset_index()
-)
 
-# Sort by deviation (range or std)
-r2p_summary_sorted = r2p_summary.sort_values(by="std", ascending=False)
+    # Load input data (subset for speed/testing)
+    inputs = pd.read_parquet(atoll_inputs_path)
 
-# Display
-print(r2p_summary_sorted.head(10))  # Top 10 atolls with largest variation
+    # Filter inputs for allowed confidence-scenario combinations
+    allowed_combos = [
+        ("medium", "baseline"),
+        ("medium", "ssp585"),
+        ("medium", "ssp245"),
+        ("medium", "ssp370"),
+        ("medium", "ssp126"),
+        ("medium", "ssp119"),
+        ("low", "ssp585"),
+    ]
 
-# %%
-# Check how much it deviates
+    inputs = inputs[
+        inputs[["confidence", "scenario"]].apply(tuple, axis=1).isin(allowed_combos)
+    ]
 
-# Ensure R2pIndex_SLR is numeric
-outputs["R2pIndex_SLR"] = pd.to_numeric(outputs["R2pIndex_SLR"], errors="coerce")
+    # Apply matching function with progress bar
+    tqdm.pandas()
+    start = time.time()
+    results = inputs.progress_apply(apply_all_matches, axis=1)
+    print(f"Completed matching in {time.time() - start:.2f} seconds.")
 
-# Group by Atoll_FID and compute stats on R2pIndex_SLR
-r2p_summary = (
-    outputs.groupby("FID_GADM")["R2pIndex_SLR"]
-    .agg(
-        count="count",
-        mean="mean",
-        std="std",
-        min="min",
-        max="max",
-        range=lambda x: x.max() - x.min(),
+    # Merge matched results back with input metadata
+    results["transect_id"] = results["transect_id"].astype(int)
+    outputs = pd.merge(
+        inputs[
+            ["transect_id", "FID_GADM", "year", "scenario", "confidence", "quantile"]
+        ],
+        results,
+        on=["transect_id", "FID_GADM", "year", "scenario", "confidence", "quantile"],
+        how="left",
     )
-    .reset_index()
-)
 
-# Sort by deviation (range or std)
-r2p_summary_sorted = r2p_summary.sort_values(by="std", ascending=False)
+    outputs.round(2).to_parquet(
+        results_parquet,
+        index=False,
+        engine="pyarrow",
+    )
+    outputs.round(2).to_csv(
+        results_csv,
+        index=False,
+    )
+    print("Saved output files.")
+    print(
+        "Started with "
+        + str(len(inputs))
+        + " rows, calculated "
+        + str(len(outputs))
+        + " rows."
+    )
 
-# Display
-print(r2p_summary_sorted.head(10))  # Top 10 atolls with largest variation
-
-# %%
-outputs.round(2)
-
-# %%
-outputs.round(2).to_parquet(
-    "../data/processed/Atoll_BEWARE_processed_outputs_2020-2150.parquet", index=False
-)
-
-# %%
-outputs.round(2).to_csv(
-    "../data/processed/Atoll_BEWARE_processed_outputs_2020-2150.csv", index=False
-)
 
 # %%
+if __name__ == "__main__":
+    main()

@@ -13,6 +13,9 @@
 # ---
 
 # %%
+import sys
+from pathlib import Path
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
@@ -21,8 +24,21 @@ import numpy as np
 from netCDF4 import Dataset
 
 # %%
+# Add project root to Python path
+sys.path.append(str(Path().resolve().parent))
+from src.settings import DATA_DIR, RAW_DIR
+
+print("Using data directory:", DATA_DIR)
+
+# %% [markdown]
+# ### Load and plot COAST-RP return periods
+# Note that you need to have first downloaded the data. 
+# To do so, you can execute `103_download_COAST-RP.ipnyb` 
+# under `/additional_notebooks`
+
+# %%
 # Load COAST-RP NetCDF file
-nc_path = "/Users/tessamoeller/Documents/atoll_paper/data/COAST-RP/COAST-RP.nc"
+nc_path = RAW_DIR / "external/COAST-RP/COAST-RP.nc"
 nc = Dataset(nc_path, mode="r")
 
 # Extract coordinates and values
@@ -35,7 +51,6 @@ print(f"\nLatitude range: {y.min():.2f} to {y.max():.2f}")
 print(f"Longitude range: {x.min():.2f} to {x.max():.2f}")
 
 # %%
-
 storm_tide = storm_tide_var.astype(float)
 if hasattr(storm_tide_var, "_FillValue"):
     storm_tide[storm_tide == storm_tide_var._FillValue] = np.nan
@@ -71,5 +86,3 @@ ax.set_global()
 plt.colorbar(sc, label="Storm Tide (50-yr RP in m)")
 plt.title("COAST-RP: 50-Year Return Period Storm Tide")
 plt.show()
-
-# %%

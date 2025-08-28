@@ -14,10 +14,33 @@
 
 # %%
 import os
+import re
+import sys
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib import animation
+
+# %%
+# Add project root to Python path
+sys.path.append(str(Path().resolve().parent))
+from src.settings import DATA_DIR, INTERIM_DIR, RAW_DIR
+
+print("Using data directory:", DATA_DIR)
+# Paths
+directory_path = RAW_DIR / "external/COWCLIP/Tm"
+output_dir = INTERIM_DIR / "external/COWCLIP/Tm"
+
+# %% [markdown]
+# ## Preprocess and clean Tm COWCLIP outputs, calculate ensemble average
+# Note that you need to have first downloaded the data.
+# To do so, you can execute `101_download_COWCLIP.ipnyb` 
+# under `/additional_notebooks`.
+
+# %% [markdown]
+# ### Check resolution and coordinates of input files
 
 
 # %%
@@ -92,22 +115,21 @@ def inspect_netcdf_files(path, recursive=False):
 
 
 # 🔧 Example usage
-directory_path = "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs"
 inspect_netcdf_files(directory_path, recursive=True)
 
 
 # %%
 ds = xr.open_dataset(
-    "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs/hs_JRC-ERAI_annual_1980-2014.nc",
-    decode_times=False,
+    directory_path / "Tm_JRC-ERAI_annual_1980-2014.nc", decode_times=False
 )
 print(ds["longitude"].values)
 print(ds["longitude"].shape)
 print(ds["longitude"].attrs)
 
-# %%
-## Fix broken longitudes
+# %% [markdown]
+# ## Fix broken longitudes
 
+# %%
 n_lon = ds.dims["longitude"]  # or use len(ds['longitude'])
 new_lons = np.linspace(0, 360 - 360 / n_lon, n_lon)
 
@@ -117,9 +139,79 @@ print(ds["longitude"].values)
 print(ds["longitude"].shape)
 print(ds["longitude"].attrs)
 
-ds.to_netcdf(
-    "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs/hs_JRC-ERAI_annual_1980-2014_fixed.nc"
+ds.to_netcdf(directory_path / "tm_JRC-ERAI_annual_1980-2014_fixed.nc")
+
+
+# %% [markdown]
+# ## Check time evolution of files
+#
+# (Note this model will therefor be excluded)
+
+
+# %%
+def animate_nc_file(filepath, var_name=None, save_path=None):
+    ds = xr.open_dataset(filepath, decode_times=False)
+
+    # Guess var_name if not provided
+    if var_name is None:
+        var_name = list(ds.data_vars)[5]
+
+    da = ds[var_name]
+
+    # Guess lat/lon coordinate names
+    lat_candidates = ["lat", "latitude"]
+    lon_candidates = ["lon", "longitude"]
+
+    lat_name = next((name for name in lat_candidates if name in ds.coords), None)
+    lon_name = next((name for name in lon_candidates if name in ds.coords), None)
+
+    if lat_name is None or lon_name is None:
+        raise ValueError("Latitude or Longitude coordinate not found in dataset")
+
+    # Mask values below 0
+    da = da.where(da >= 0)
+
+    # Set up the figure and axes
+    fig, ax = plt.subplots(figsize=(8, 5))
+    plot = da.isel(time=0).plot(
+        x=lon_name, y=lat_name, cmap="viridis", ax=ax, add_colorbar=True
+    )
+    title = ax.set_title("")
+
+    # Animation update function
+    def update(frame):
+        ax.clear()
+        frame_data = da.isel(time=frame)
+        frame_data.plot(
+            x=lon_name, y=lat_name, cmap="viridis", ax=ax, add_colorbar=False
+        )
+        time_val = ds["time"].values[frame] if "time" in ds else frame
+        title.set_text(f"{var_name} | Time index: {frame} | Time: {time_val}")
+        return (ax,)
+
+    # Create animation
+    ani = animation.FuncAnimation(
+        fig, update, frames=da.sizes["time"], blit=False, repeat=True
+    )
+
+    plt.close(fig)  # Prevent duplicate plot in Jupyter
+
+    if save_path:
+        ani.save(save_path, writer="pillow", fps=2)  # Save as .gif or .mp4
+    else:
+        from IPython.display import HTML
+
+        return HTML(ani.to_jshtml())  # For Jupyter inline display
+
+
+animate_nc_file(
+    directory_path / "Tm_GOW2_annual_1980-2014.nc",
+    save_path=directory_path / "movie/Tm_GOW2_annual_1980-2014.gif",
 )
+
+
+# %% [markdown]
+# ## Regrid files
 
 
 # %%
@@ -145,12 +237,6 @@ def regrid_file(input_path, output_path, lat_name="lat", lon_name="lon"):
         if lon_guess:
             lon_name = lon_guess[0]
 
-        # Convert longitudes from -180..180 to 0..360 if needed
-        lon_vals = ds[lon_name].values
-        if np.nanmin(lon_vals) < 0:
-            ds[lon_name] = (ds[lon_name] + 180) % 360
-            ds = ds.sortby(lon_name)  # sort to ensure interpolation is monotonic
-
         # Define the new uniform grid
         new_lat = np.arange(-89.75, 90, 0.5)
         new_lon = np.arange(0.25, 360, 0.5)
@@ -171,11 +257,10 @@ def regrid_file(input_path, output_path, lat_name="lat", lon_name="lon"):
 def regrid_all_in_directory(
     directory, recursive=False, output_folder="regridded", output_suffix="_regridded.nc"
 ):
-    output_dir = os.path.join(directory, output_folder)
     os.makedirs(output_dir, exist_ok=True)
 
-    exclude_file = "hs_JRC-ERAI_annual_1980-2014.nc"
-    include_file = "hs_JRC-ERAI_annual_1980-2014_fixed.nc"
+    exclude_file = "tm_JRC-ERAI_annual_1980-2014.nc"
+    include_file = "tm_JRC-ERAI_annual_1980-2014_fixed.nc"
 
     for root, _, files in os.walk(directory):
         for fname in files:
@@ -196,45 +281,7 @@ def regrid_all_in_directory(
 
 
 # Set your input directory here
-input_directory = "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs"
-regrid_all_in_directory(input_directory)
-
-
-# %%
-def plot_regridded_file(filepath, var_name=None):
-    ds = xr.open_dataset(filepath, decode_times=False)
-
-    if var_name is None:
-        var_name = list(ds.data_vars)[0]
-
-    da = ds[var_name]
-
-    # Guess lat/lon coordinate names:
-    lat_candidates = ["lat", "latitude"]
-    lon_candidates = ["lon", "longitude"]
-
-    lat_name = next((name for name in lat_candidates if name in ds.coords), None)
-    lon_name = next((name for name in lon_candidates if name in ds.coords), None)
-
-    if lat_name is None or lon_name is None:
-        raise ValueError("Latitude or Longitude coordinate not found in dataset")
-
-    # If time dimension exists, select first time slice
-    if "time" in da.dims:
-        da = da.isel(time=0)
-
-    # Mask values below -100 by setting them to NaN
-    da = da.where(da >= 0)
-
-    da.plot(x=lon_name, y=lat_name, cmap="viridis")
-    plt.title(f"{var_name} from {filepath}")
-    plt.show()
-
-
-# %%
-plot_regridded_file(
-    "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs/regridded/hs_CSIRO-G1D_annual_1980-2010_regridded.nc"
-)
+regrid_all_in_directory(directory_path)
 
 
 # %%
@@ -301,8 +348,8 @@ def check_regridding(
 
 # %%
 check_regridding(
-    "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs",
-    "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs/regridded",
+    directory_path,
+    output_dir,
 )
 
 
@@ -310,7 +357,7 @@ check_regridding(
 def plot_regridded_year(
     regridded_dir,
     year=1990,
-    var_to_plot="hs_avg",
+    var_to_plot="tm_avg",
     lat_name="latitude",
     lon_name="longitude",
 ):
@@ -382,8 +429,7 @@ def plot_regridded_year(
 
 
 # Example usage
-regridded_dir = "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs/regridded"
-plot_regridded_year(regridded_dir, year=1990, var_to_plot="hs_avg")
+plot_regridded_year(output_dir, year=2004, var_to_plot="tm_p90")
 
 
 # %%
@@ -426,14 +472,14 @@ def check_time_extents(regridded_dir, time_var="time"):
     return time_coverage
 
 
-time_coverage = check_time_extents(
-    "/Users/tessamoeller/Documents/atoll_paper/data/COWCLIP/Hs/regridded"
-)
+time_coverage = check_time_extents(output_dir)
+
+# %% [markdown]
+# ## Create ensemble average for 1995-2014, interpolate for missing percentiles
 
 # %%
 # Variables to average
-ensemble_mean.close()
-target_vars = ["hs_avg", "hs_p10", "hs_p50", "hs_p90", "hs_p95", "hs_p99", "hs_max"]
+target_vars = ["tm_avg", "tm_p10", "tm_p50", "tm_p90", "tm_p95", "tm_p99", "tm_max"]
 
 
 def get_dataset_means(fname, time_var="time", variables=target_vars):
@@ -448,6 +494,8 @@ def get_dataset_means(fname, time_var="time", variables=target_vars):
     # Time mask based on model
     if "CSIRO-G1D" in fname:
         year_mask = (years >= 1995) & (years <= 2009)
+    elif "JRA55-ST2" in fname:
+        year_mask = (years >= 1995) & (years <= 2004)
     else:
         year_mask = (years >= 1995) & (years <= 2014)
 
@@ -459,7 +507,7 @@ def get_dataset_means(fname, time_var="time", variables=target_vars):
     for var in variables:
         if var in ds:
             data = ds[var].isel({time_var: year_mask})
-            data = data.where(data < 100)  # ⬅️ Mask values >= 100
+            data = data.where(data < 100)  # Mask values >= 100
             averaged.append(data.mean(dim=time_var))
         else:
             raise ValueError(
@@ -470,7 +518,13 @@ def get_dataset_means(fname, time_var="time", variables=target_vars):
 
 
 def compute_ensemble_average(folder, variables=target_vars):
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".nc")])
+    exclude_patterns = ["GOW2"]
+    pattern = re.compile("|".join(exclude_patterns), re.IGNORECASE)
+
+    files = sorted(
+        [f for f in os.listdir(folder) if f.endswith(".nc") and not pattern.search(f)]
+    )
+
     model_means = []
 
     for fname in files:
@@ -485,7 +539,6 @@ def compute_ensemble_average(folder, variables=target_vars):
     if not model_means:
         raise RuntimeError("No datasets loaded successfully.")
 
-    # Combine and average across the new 'ensemble' dimension
     ensemble_mean = xr.concat(model_means, dim="ensemble").mean(dim="ensemble")
     return ensemble_mean
 
@@ -498,7 +551,7 @@ def interpolate_percentiles(ds, base_percentiles=None, target_percentiles=None):
 
     # Step 1: Stack base percentile variables into one DataArray
     try:
-        data_vars = [ds[f"hs_p{p}"] for p in base_percentiles]
+        data_vars = [ds[f"tm_p{p}"] for p in base_percentiles]
     except KeyError as e:
         missing = str(e).strip("'")
         raise ValueError(f"Missing expected variable: {missing} in dataset")
@@ -511,7 +564,7 @@ def interpolate_percentiles(ds, base_percentiles=None, target_percentiles=None):
     # Step 2: Interpolate and add each target percentile to the dataset
     for p in target_percentiles:
         interpolated = hs_stacked.interp(percentile=p)
-        ds[f"hs_p{p}"] = interpolated
+        ds[f"tm_p{p}"] = interpolated
 
     # Step 3: Remove scalar percentile coordinate if present
     ds = ds.drop_vars("percentile", errors="ignore")
@@ -520,10 +573,8 @@ def interpolate_percentiles(ds, base_percentiles=None, target_percentiles=None):
 
 
 # === Run it ===
-regridded_dir = "../data/COWCLIP/Hs/regridded"
-output_path = "../data/processed/COWCLIP_ensemble_mean_Hs_1995_2014.nc"
-
-ensemble_mean = compute_ensemble_average(regridded_dir)
+output_path = INTERIM_DIR / "external/COWCLIP/COWCLIP_ensemble_mean_Tm_1995_2014.nc"
+ensemble_mean = compute_ensemble_average(output_dir)
 ensemble_mean_interpolated = interpolate_percentiles(ensemble_mean)
 
 
@@ -539,7 +590,7 @@ print(f"✅ Ensemble mean saved to '{output_path}'")
 
 # %%
 # Load the ensemble mean file
-ds = xr.open_dataset("../data/processed/COWCLIP_ensemble_mean_Hs_1995_2014.nc")
+ds = xr.open_dataset(output_path)
 
 # Mask invalid values (<= -100)
 masked_ds = ds.where(ds > 0)
@@ -565,6 +616,3 @@ for j in range(i + 1, len(axs)):
 
 plt.tight_layout()
 plt.show()
-
-
-# %%
