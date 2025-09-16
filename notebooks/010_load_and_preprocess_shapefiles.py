@@ -23,14 +23,13 @@ import matplotlib.pyplot as plt
 # %%
 # Add project root to Python path
 sys.path.append(str(Path().resolve().parent))
-from src.settings import DATA_DIR, INTERIM_DIR, RAW_DIR
+from src.settings import DATA_DIR, INTERIM_DIR, RAW_DIR, SHAPEFILE_PATH
 
 print("Using data directory:", DATA_DIR)
 
 # %%
 # Load the shapefile
-shapefile_path = RAW_DIR / "Shapefiles/Atoll_transects_240725.shp"
-gdf = gpd.read_file(shapefile_path)
+gdf = gpd.read_file(SHAPEFILE_PATH)
 
 # Display the first few rows of attribute data
 print("Attribute Data:")
@@ -99,6 +98,3 @@ m
 file_path_output = INTERIM_DIR / "Shapefiles/Atoll_transects_centroids.shp"
 gdf = gdf.drop(columns="centroid")  # centroids is in EPSG3857, in meters
 gdf.to_file(file_path_output)
-
-# %%
-gdf

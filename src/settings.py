@@ -17,28 +17,29 @@ import os
 from pathlib import Path
 
 # %%
-# Absolute path from environment variable
-# DATA_DIR = Path(os.environ["PAPER_DATA"]).expanduser().resolve()
+# Dynamically resolve project root (2 levels up from /src/settings.py)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-DATA_DIR = (
-    Path(
-        os.environ.get(
-            "PAPER_DATA", "/Users/tessamoller/Documents/atoll-slr-paper-data_clean"
-        )
-    )
-    .expanduser()
-    .resolve()
-)
+# Data directory (can be overridden by PAPER_DATA environment variable)
+DATA_DIR = ( 
+    Path( os.environ.get("PAPER_DATA", 
+                                   "/Users/tessamoller/Documents/atoll-slr-paper-data_clean")).expanduser().resolve())
 
 # Common subfolders relative to DATA_DIR
 RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
 PROCESSED_DIR = DATA_DIR / "processed"
 EXTERNAL_DIR = DATA_DIR / "external"
-# Additionnal
-FIG_DIR = (
-    "/Users/tessamoller/Documents/atoll-slr-paper-manuscript/Figures/Suppl_Figures"
-)
+
+# Shapefile path (kept relative to project root for portability)
+SHAPEFILE_PATH = PROJECT_ROOT / "data" / "Shapefiles" / "Atoll_transects_240725.shp"
+
+# Figures directory (can also be made configurable with an env var if needed)
+FIG_DIR = Path(
+    os.environ.get(
+        "FIG_DIR",
+        PROJECT_ROOT.parent / "atoll-slr-paper-manuscript" / "Figures" / "Suppl_Figures",
+    )
+).resolve()
 
 
-# %%
