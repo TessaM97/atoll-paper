@@ -15,6 +15,7 @@
 # %%
 import sys
 from pathlib import Path
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
@@ -30,8 +31,8 @@ print("Using data directory:", DATA_DIR)
 
 # %% [markdown]
 # ### Load and plot one IPCC regional SLR file
-# Note that you need to have first downloaded the data. 
-# To do so, you can execute `102_download_AR6_SLR_projections.ipnyb` 
+# Note that you need to have first downloaded the data.
+# To do so, you can execute `102_download_AR6_SLR_projections.ipnyb`
 # under `/additional_notebooks`
 
 # %%

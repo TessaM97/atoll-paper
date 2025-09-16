@@ -34,8 +34,8 @@ output_dir = INTERIM_DIR / "external/COWCLIP/Hs"
 
 # %% [markdown]
 # ## Preprocess and clean Hs COWCLIP outputs, calculate ensemble average
-# Note that you need to have first downloaded the data. 
-# To do so, you can execute `101_download_COWCLIP.ipnyb` 
+# Note that you need to have first downloaded the data.
+# To do so, you can execute `101_download_COWCLIP.ipnyb`
 # under `/additional_notebooks`.
 
 # %% [markdown]

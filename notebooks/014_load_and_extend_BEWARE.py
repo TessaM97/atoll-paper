@@ -39,7 +39,7 @@ fig_path = Path(FIG_DIR) / "BEWARE_Extension"
 # ### Load and extent BEWARE framework
 # BEWARE entries are grouped by H0L0, Cf, Beta_Beach, W_reef, beta_ForeReef, and H0.
 # For each group, if multiple entries exist, their values are averaged.
-# The BEWARE dataset is then extended by fitting a linear relationship 
+# The BEWARE dataset is then extended by fitting a linear relationship
 # for each group with respect to η (eta), up to η = 8 m.
 # The results are interpolated with a step size of 0.05 m in η.
 

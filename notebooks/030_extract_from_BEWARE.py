@@ -44,7 +44,7 @@ results_parquet = PROCESSED_DIR / "Atoll_BEWARE_processed_outputs.parquet"
 # %% [markdown]
 # ### BEWARE Matching Script
 #
-# This script processes coastal flood hazard inputs by matching them against 
+# This script processes coastal flood hazard inputs by matching them against
 # the **extended BEWARE framework database**.
 # The workflow identifies the best-fitting **R2pIndex** values for given hydrodynamic and geomorphic parameters across transects and scenarios.
 #

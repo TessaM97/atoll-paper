@@ -36,7 +36,7 @@ output_dir = INTERIM_DIR / "external/COWCLIP/Tm"
 # %% [markdown]
 # ## Preprocess and clean Tm COWCLIP outputs, calculate ensemble average
 # Note that you need to have first downloaded the data.
-# To do so, you can execute `101_download_COWCLIP.ipnyb` 
+# To do so, you can execute `101_download_COWCLIP.ipnyb`
 # under `/additional_notebooks`.
 
 # %% [markdown]

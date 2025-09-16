@@ -32,8 +32,8 @@ print("Using data directory:", DATA_DIR)
 
 # %% [markdown]
 # ### Load and plot COAST-RP return periods
-# Note that you need to have first downloaded the data. 
-# To do so, you can execute `103_download_COAST-RP.ipnyb` 
+# Note that you need to have first downloaded the data.
+# To do so, you can execute `103_download_COAST-RP.ipnyb`
 # under `/additional_notebooks`
 
 # %%
