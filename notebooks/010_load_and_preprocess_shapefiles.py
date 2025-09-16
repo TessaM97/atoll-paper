@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 # %%
 # Add project root to Python path
 sys.path.append(str(Path().resolve().parent))
-from src.settings import DATA_DIR, INTERIM_DIR, RAW_DIR, SHAPEFILE_PATH
+from src.settings import DATA_DIR, INTERIM_DIR, SHAPEFILE_PATH
 
 print("Using data directory:", DATA_DIR)
 

@@ -21,9 +21,15 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 # Data directory (can be overridden by PAPER_DATA environment variable)
-DATA_DIR = ( 
-    Path( os.environ.get("PAPER_DATA", 
-                                   "/Users/tessamoller/Documents/atoll-slr-paper-data_clean")).expanduser().resolve())
+DATA_DIR = (
+    Path(
+        os.environ.get(
+            "PAPER_DATA", "/Users/tessamoller/Documents/atoll-slr-paper-data_clean"
+        )
+    )
+    .expanduser()
+    .resolve()
+)
 
 # Common subfolders relative to DATA_DIR
 RAW_DIR = DATA_DIR / "raw"
@@ -38,8 +44,9 @@ SHAPEFILE_PATH = PROJECT_ROOT / "data" / "Shapefiles" / "Atoll_transects_240725.
 FIG_DIR = Path(
     os.environ.get(
         "FIG_DIR",
-        PROJECT_ROOT.parent / "atoll-slr-paper-manuscript" / "Figures" / "Suppl_Figures",
+        PROJECT_ROOT.parent
+        / "atoll-slr-paper-manuscript"
+        / "Figures"
+        / "Suppl_Figures",
     )
 ).resolve()
-
-

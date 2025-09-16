@@ -5,7 +5,7 @@
 
 ## Description
 
-This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2025)**.  
+This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2025)**.
 
 The repository uses the environment manager [pixi](https://pixi.sh/latest) to ensure reproducibility and compatibility of required packages. Transects used in the study are included under `data/Shapefiles`.
 
