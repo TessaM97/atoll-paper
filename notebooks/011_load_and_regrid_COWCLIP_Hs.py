@@ -126,6 +126,7 @@ ds = xr.open_dataset(
     directory_path / "hs_JRC-ERAI_annual_1980-2014.nc",
     decode_times=False,
 )
+
 print(ds["longitude"].values)
 print(ds["longitude"].shape)
 print(ds["longitude"].attrs)
@@ -580,3 +581,5 @@ for j in range(i + 1, len(axs)):
 
 plt.tight_layout()
 plt.show()
+
+# %%

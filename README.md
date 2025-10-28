@@ -59,11 +59,16 @@ pixi run jupyter lab
 
 Necessary datasets for reproduction of results include **COWCLIP**, **AR6_SLR_projection**, **COAST_RP**, **BEWARE_database**, as well as the **atoll transects**.
 
-1) Create a folder for data, e.g. `atoll_slr_data`.
+1) Create a data directory for e.g. `atoll_slr_data`.
 2) Update `DATA_DIR` in `src/settings.py` to point to this folder.
-2) Execute `100_download_BEWARE_database`,`101_download_COWCLIP` , `102_download_AR6_SLR_projections`, `103_download_COAST_RP` under `notebooks/additionnal_notebooks`. This will download the necessary external datasets.
+3) Download the data: Several helper notebooks and scripts are provided to assist with downloading the required data. These can be found in `notebooks/additionnal_notebooks` and include
+* `100_download_BEWARE_database`,
+* `101_download_COWCLIP` ,
+* `102_download_AR6_SLR_projections`,
+* `103_download_COAST_RP`.
 
-Example:
+**Note:** These scripts are provided to speed up data acquisition, but downloads may occasionally fail due to server issues or other external factors.
+Example execution:
 ```sh
 pixi run python notebooks/additional_notebooks/101_download_COWCLIP.py
 ```
@@ -74,7 +79,7 @@ Running the analysis
 The main workflow is organized into sequentially numbered notebooks:
 `010–020`: Data preprocessing
 `030`: Matching transects with the best BEWARE database entries
-Follow them in numerical order. Each notebook contains detailed explanations.
+Make sure you have updated  `DATA_DIR` in `src/settings.py` to point to your data storage folder. Follow the scripts/notebooks in numerical order. Each notebook contains detailed explanations.
 
 
 ## License
