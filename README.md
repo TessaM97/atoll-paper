@@ -77,10 +77,9 @@ pixi run python notebooks/additional_notebooks/101_download_COWCLIP.py
 
 Running the analysis
 The main workflow is organized into sequentially numbered notebooks:
-`010–020`: Data preprocessing
-`030`: Matching transects with the best BEWARE database entries
+* `010–020`: Data preprocessing
+* `030`: Matching transects with the best BEWARE database entries
 Make sure you have updated  `DATA_DIR` in `src/settings.py` to point to your data storage folder. Follow the scripts/notebooks in numerical order. Each notebook contains detailed explanations.
-
 
 ## License
 
