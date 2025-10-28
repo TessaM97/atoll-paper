@@ -43,60 +43,6 @@ print("Using data directory:", DATA_DIR)
 
 
 # %%
-def download_filtered_zenodo_files(rec_id, output_dir, keywords=("total", "values")):
-    """
-    Download files from a Zenodo record that contain all keywords in their filename.
-
-    Args:
-        rec_id (str): Zenodo record ID
-        output_dir (Path): base directory to save files (Path object)
-        keywords (tuple[str]): keywords to filter filenames
-    """
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Fetch metadata for the record
-    api_url = f"https://zenodo.org/api/records/{rec_id}"
-    r = requests.get(api_url)
-    r.raise_for_status()
-    data = r.json()
-
-    files = data.get("files", [])
-    if not files:
-        print("No files found in this record.")
-        return
-
-    # Filter filenames
-    selected = [
-        f for f in files if all(kw.lower() in f["key"].lower() for kw in keywords)
-    ]
-    print(f"Found {len(selected)} matching files out of {len(files)} total.")
-
-    # Download each matching file
-    for f in selected:
-        url = f["links"]["self"]
-        rel_path = Path(f["key"])  # may include "subfolder1/file.nc"
-        local_path = output_dir / rel_path
-
-        local_path.parent.mkdir(parents=True, exist_ok=True)
-
-        print(f"Downloading {rel_path} …")
-        with requests.get(url, stream=True) as resp:
-            resp.raise_for_status()
-            with open(local_path, "wb") as out:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    out.write(chunk)
-
-    print("Download complete.")
-
-
-# Example usage
-if __name__ == "__main__":
-    download_filtered_zenodo_files("5914710", directory_path)
-
-
-# %%
-
 rec_id = "5914710"
 api_url = f"https://zenodo.org/api/records/{rec_id}"
 r = requests.get(api_url)

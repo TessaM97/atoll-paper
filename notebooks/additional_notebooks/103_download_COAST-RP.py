@@ -21,8 +21,11 @@ import requests
 
 # %%
 # Add project root (two levels up from current notebook folder)
-project_root = Path().resolve().parents[1]
-sys.path.append(str(project_root))
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+# project_root = Path().resolve().parents[1]
+# sys.path.append(str(project_root))
 from src.settings import DATA_DIR, RAW_DIR
 
 # Paths
@@ -63,3 +66,5 @@ response.raise_for_status()  # Check for request errors
 with open(local_readme_file, "w") as file:
     file.write(response.text)
 print(f"README.txt downloaded successfully to {local_readme_file}")
+
+# %%

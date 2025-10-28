@@ -22,11 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 # Data directory (can be overridden by PAPER_DATA environment variable)
 DATA_DIR = (
-    Path(
-        os.environ.get(
-            "PAPER_DATA", "/Users/tessamoller/Documents/atoll-slr-paper-data_clean"
-        )
-    )
+    Path(os.environ.get("PAPER_DATA", "/Users/tessamoller/Documents/atoll_slr_data"))
     .expanduser()
     .resolve()
 )

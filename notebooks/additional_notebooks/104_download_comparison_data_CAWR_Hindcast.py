@@ -149,3 +149,5 @@ def get_max_wave_event(ds, locations, start_date=None, end_date=None):
 summary = get_max_wave_event(
     ds, locations, start_date="2015-03-06", end_date="2015-03-20"
 )
+
+# %%
