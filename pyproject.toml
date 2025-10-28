@@ -2,9 +2,9 @@
 authors = [
     { name = "Tessa Möller", email = "moeller@iiasa.ac.at"},
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 dependencies = [
-    "pre-commit>=3.3.1",
+    "pre-commit==3.3.1",
     "jupyterlab>=4.0.0",
     "jupytext>=1.15.2",
 ]
@@ -13,8 +13,32 @@ version = "0.1.0"
 description = "Pipeline to handle atoll transect data and combine with necessary input data to integrate with BEWARE."
 readme = "README.md"
 
-[tool.uv]
-package = false
+[tool.pixi.project]
+channels = [
+    "conda-forge",
+]
+platforms = [
+    "osx-64",
+    "osx-arm64",
+    "linux-64",
+    "linux-aarch64",
+    "win-64",
+]
+
+[tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+netcdf4 = ">=1.7.2,<2"
+numpy = ">=2.3.1,<3"
+pandas = ">=2.3.0,<3"
+tqdm = ">=4.67.1,<5"
+geopandas = ">=1.1.1,<2"
+xarray = ">=2025.6.1,<2026"
+geopy = ">=2.4.1,<3"
+cartopy = ">=0.24.0,<0.25"
+fastparquet = ">=2024.11.0,<2025"
+pyarrow = ">=20.0.0,<21"
+dask = ">=2025.7.0,<2026"
 
 [tool.jupytext]
 formats = "ipynb,py:percent"

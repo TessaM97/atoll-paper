@@ -1,130 +1,98 @@
-# My Python repo
-<!--- Adding a one-line description of what this repository is for here may be
-helpful -->
-<!---
+# Möller et al. 2025 — The loss of safe land on atoll islands under different emissions pathways
 
-We recommend having a status line in your repo to tell anyone who stumbles
-on your repository where you're up to. Some suggested options:
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
-- prototype: the project is just starting up and the code is all prototype
-- development: the project is actively being worked on
-- finished: the project has achieved what it wanted and is no longer being
-  worked on, we won't reply to any issues
-- dormant: the project is no longer worked on but we might come back to it, if
-  you have questions, feel free to raise an issue
-- abandoned: this project is no longer worked on and we won't reply to any
-  issues
+## Description
 
--->
+This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2025)**.
 
-## Status
+The repository uses the environment manager [pixi](https://pixi.sh/latest) to ensure reproducibility and compatibility of required packages. Transects used in the study are included under `data/Shapefiles`.
 
-- prototype: the project is just starting up and the code is all prototype
+---
 
-## Installation
+## Quick start
 
-We do all our environment management using [uv](https://docs.astral.sh/uv/).
-To get started, you will need to make sure that uv is installed
-([instructions here](https://docs.astral.sh/uv/getting-started/installation/),
-we found that using uv's standalone installer was best on a Mac).
+```sh
+git clone https://gitlab.com/TessaM97/atoll-slr-paper
+cd atoll-slr-paper
+make virtual-environment
+pixi run jupyter lab
+```
+---
+
+## Installation of python environment
+
+The environment management uses [pixi](https://pixi.sh/latest).
+To get started, you will need to make sure that pixi is installed ([instructions here](https://pixi.sh/latest)).
 
 To create the virtual environment, run
 
 ```sh
-uv sync
-uv run pre-commit install
+pixi install
+pixi run pre-commit install
 ```
 
 These steps are also captured in the `Makefile` so if you want a single
-command, you can instead simply run `make virtual-enviroment`.
+command, you can instead simply run `make virtual-environment`.
 
 Having installed your virtual environment, you can now run commands in your
 virtual environment using
 
 ```sh
-uv run <command>
+pixi run <command>
 ```
 
 For example, to run Python within the virtual environment, run
 
 ```sh
-uv run python
+pixi run python
 ```
 
 As another example, to run a notebook server, run
 
 ```sh
-uv run jupyter lab
+pixi run jupyter lab
 ```
 
-<!--- Other documentation and instructions can then be added here as you go,
-perhaps replacing the other instructions above as they may become redundant.
--->
+## Download of required data
 
-## Development
+Necessary datasets for reproduction of results include **COWCLIP**, **AR6_SLR_projection**, **COAST_RP**, **BEWARE_database**, as well as the **atoll transects**.
 
-<!--- In bigger projects, we would recommend having separate docs where this
-development information can go. However, for such a simple repository, having
-it all in the README is fine. -->
+1) Create a folder for data, e.g. `atoll_slr_data`.
+2) Update `DATA_DIR` in `src/settings.py` to point to this folder.
+2) Execute `100_download_BEWARE_database`,`101_download_COWCLIP` , `102_download_AR6_SLR_projections`, `103_download_COAST_RP` under `notebooks/additionnal_notebooks`. This will download the necessary external datasets.
 
-Install and run instructions are the same as the above (this is a simple
-repository, without tests etc. so there are no development-only dependencies).
+Example:
+```sh
+pixi run python notebooks/additional_notebooks/101_download_COWCLIP.py
+```
 
-### Contributing
+## Running the analysis
 
-This is a very thin repository. There aren't any strict guidelines for
-contributing, partly because we don't know what we're trying to achieve (we're
-just exploring). If you would like to contribute, it is best to raise an issue
-to discuss what you want to do (without a discussion, we can't guarantee that
-any contribution can actually be used).
-<!--- You may want to update this section as the project evolves. -->
+Running the analysis
+The main workflow is organized into sequentially numbered notebooks:
+`010–020`: Data preprocessing
+`030`: Matching transects with the best BEWARE database entries
+Follow them in numerical order. Each notebook contains detailed explanations.
 
-### Repository structure
 
-The repository is very basic. It imposes no structure on you so you can layout
-your Python files, notebooks etc. in any way you wish. We do have a basic
-`Makefile` which captures key commands in one place (for more thoughts on why
-this makes sense, see
-[general principles: automation](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/general-principles/automation.md)).
-For an introduction to `make`, see
-[this introduction from Software Carpentry](https://swcarpentry.github.io/make-novice/).
-Having said this, if you're not interested in `make`, you can just copy the
-commands out of the `Makefile` by hand and you will be 90% as happy for a
-simple repository like this.
+## License
 
-### Tools
+This repository, including all data and scripts, is licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) license. Please refer to the individual license texts in the LICENSE file for more details.
 
-In this repository, we use the following tools:
+## References
 
-- git for version-control (for more on version control, see
-  [general principles: version control](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/theory/version-control.md))
-    - for these purposes, git is a great version-control system so we don't
-      complicate things any further. For an introduction to Git, see
-      [this introduction from Software Carpentry](http://swcarpentry.github.io/git-novice/).
-- [uv](https://docs.astral.sh/uv/) for environment management
-  (for more on environment management, see
-  [general principles: environment management](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/theory/environment-management.md))
-    - there are lots of environment management systems.
-      uv works well in our experience.
-    - we track the `uv.lock` file so that the environment
-      is completely reproducible on other machines or by other people
-      (e.g. if you want a colleague to take a look at what you've done)
-- [pre-commit](https://pre-commit.com/) with some very basic settings to get some
-  easy wins in terms of maintenance, specifically:
-    - code formatting with [ruff](https://docs.astral.sh/ruff/formatter/)
-    - basic file checks (removing unneeded whitespace, not committing large
-      files etc.)
-    - (for more thoughts on the usefulness of pre-commit, see
-      [general principles: automation](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/general-principles/automation.md)
-    - track your notebooks using
-    [jupytext](https://jupytext.readthedocs.io/en/latest/index.html)
-    (for more thoughts on the usefulness of Jupytext, see
-    [tips and tricks: Jupytext](https://gitlab.com/znicholls/mullet-rse/-/blob/main/book/tips-and-tricks/managing-notebooks-jupytext.md))
-        - this avoids nasty merge conflicts and incomprehensible diffs
+If you use this repository, please cite:
+Möller, T., et al. (2025). The loss of safe land on atoll islands under different emissions pathways. [Journal Name], [DOI link]
 
-## Original template
+Please also cite any of the external datasets that you use (BEWARE_database, COWCLIP, AR6_SLR_projection COAST_RP,...)
 
-This project was generated from this template:
-[basic python repository](https://gitlab.com/openscm/copier-basic-python-repository).
-[copier](https://copier.readthedocs.io/en/stable/) is used to manage and
-distribute this template.
+## Contact
+
+For questions, please contact: moeller@iiasa.ac.at
+
+### Original template
+
+This repository was generated from this template:
+[basic python repository](https://gitlab.com/openscm/copier-basic-python-repository). [copier](https://copier.readthedocs.io/en/stable/) is used to manage and distribute this template.

@@ -12,6 +12,19 @@ __pycache__/
 # C extensions
 *.so
 
+# pixi stuff
+.pixi
+
+# Ignore large data directories
+data/
+notebooks/additional_notebooks/data/
+
+# Ignore temporary files
+*.log
+*.tmp
+*.DS_Store
+
+
 # Distribution / packaging
 .Python
 build/

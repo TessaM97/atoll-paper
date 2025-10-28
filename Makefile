@@ -24,9 +24,9 @@ help:  ## print short description of each target
 
 .PHONY: pre-commit
 pre-commit:  ## run pre-commit on all files in the repository
-	uv run pre-commit run --all-files
+	pixi run pre-commit run --all-files
 
 .PHONY: virtual-environment
 virtual-environment:  ## update virtual environment, create a new one if it doesn't already exist
-	uv sync
-	uv run pre-commit install
+	pixi install
+	pixi run pre-commit install
