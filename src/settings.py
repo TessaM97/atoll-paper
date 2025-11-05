@@ -41,7 +41,7 @@ FIG_DIR = Path(
     os.environ.get(
         "FIG_DIR",
         PROJECT_ROOT.parent
-        / "atoll-slr-paper-manuscript"
+        / "atoll-paper-manuscript"
         / "Figures"
         / "Suppl_Figures",
     )

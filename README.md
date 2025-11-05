@@ -14,8 +14,8 @@ The repository uses the environment manager [pixi](https://pixi.sh/latest) to en
 ## Quick start
 
 ```sh
-git clone https://gitlab.com/TessaM97/atoll-slr-paper
-cd atoll-slr-paper
+git clone https://gitlab.com/TessaM97/atoll-paper
+cd atoll-paper
 make virtual-environment
 pixi run jupyter lab
 ```

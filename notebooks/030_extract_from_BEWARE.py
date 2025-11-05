@@ -154,7 +154,7 @@ def main():
 
     # Determine script directory to load data relative to script location
     home_dir = os.path.dirname(os.path.realpath(__file__))
-    out_dir = "/hdrive/all_users/moeller/MyDocuments/atoll-slr-paper/data/processed/"
+    out_dir = "/hdrive/all_users/moeller/MyDocuments/atoll-paper/data/processed/"
 
     # Load BEWARE NetCDF database and convert to structured numpy array
     ds = nc.Dataset(BEWARE_extended_path)

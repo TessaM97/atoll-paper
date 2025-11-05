@@ -123,7 +123,7 @@ download_and_extract_selected_zip(zip_url, directory_path)
 # %%
 # Base folder containing the extracted files
 base_dir = Path(
-    "/Users/tessamoller/Documents/atoll-slr-paper-data_clean/raw/external/AR6_regional_SLR_projections"
+    "/Users/tessamoller/Documents/atoll-paper-data_clean/raw/external/AR6_regional_SLR_projections"
 )
 prefix_to_remove = "ar6-regional-confidence/regional"
 

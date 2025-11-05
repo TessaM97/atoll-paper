@@ -19,7 +19,7 @@ import numpy as np
 import xarray as xr
 
 # -------- SETTINGS --------
-data_folder = "/Users/tessamoller/Documents/atoll-slr-paper-data/data/large_datasets/ORAS5_sossheig"  # 🔁 Update this path
+data_folder = "/Users/tessamoller/Documents/atoll-paper-data/data/large_datasets/ORAS5_sossheig"  # 🔁 Update this path
 variable_name = "sossheig"  # ORAS5 sea surface height variable
 
 # Site coordinates: (latitude, longitude)

@@ -7,4 +7,4 @@ notebooks: true
 package_manager: pixi
 project_description_short: Pipeline to handle atoll transect data and combine with
     necessary input data to integrate with BEWARE.
-project_url: https://gitlab.com/TessaM97/atoll-slr-paper
+project_url: https://gitlab.com/TessaM97/atoll-paper
