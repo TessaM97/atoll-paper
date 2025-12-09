@@ -428,3 +428,21 @@ output_path = os.path.join(
 )
 
 BEWARE_inputs.to_parquet(output_path, index=False, engine="pyarrow")
+
+# %%
+# Assess in how many cases BEWARE inputs exceed 3meters
+num_exceed = (BEWARE_inputs["eta_combined_rp1"] > 3).sum()
+total = len(BEWARE_inputs)
+percent_exceeding_3m = num_exceed / total * 100
+print(percent_exceeding_3m)
+
+
+# Per scenario
+scenario_stats = (
+    BEWARE_inputs.groupby("scenario")
+      .apply(lambda g: (g["eta_combined_rp1"] > 3).mean() * 100)
+      .reset_index(name="pct_exceed_3m")
+)
+
+print("Percentage exceeding 3m by scenario:")
+print(scenario_stats)
