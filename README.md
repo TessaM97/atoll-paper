@@ -89,7 +89,7 @@ This repository, including all data and scripts, is licensed under the Creative 
 ## References
 
 If you use this repository, please cite:
-Möller, T., et al. (2026). Half of atoll land becomes unsafe under half a meter of sea level rise due to wave-driven flooding. [Journal Name], [DOI link]
+Möller, T., et al. (2026). Half of atoll land becomes unsafe under half a meter of sea level rise due to wave-driven flooding. [Journal Name], [https://doi.org/10.5281/zenodo.18187573]
 
 Please also cite any of the external datasets that you use (BEWARE_database, COWCLIP, AR6_SLR_projection COAST_RP,...)
 
