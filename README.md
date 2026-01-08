@@ -5,9 +5,9 @@
 
 ## Description
 
-This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2026)**.
+This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2026)**, as well as the reef transects and Atoll Shapefiles.
 
-The repository uses the environment manager [pixi](https://pixi.sh/latest) to ensure reproducibility and compatibility of required packages. Transects used in the study are included under `data/Shapefiles`.
+The repository uses the environment manager [pixi](https://pixi.sh/latest) to ensure reproducibility and compatibility of required packages. Transects and Shapefiles used in the study are included under `data/Shapefiles`.
 
 ---
 
@@ -61,7 +61,8 @@ Necessary datasets for reproduction of results include **COWCLIP**, **AR6_SLR_pr
 
 1) Create a data directory for e.g. `atoll_slr_data`.
 2) Update `DATA_DIR` in `src/settings.py` to point to this folder.
-3) Download the data: Several helper notebooks and scripts are provided to assist with downloading the required data. These can be found in `notebooks/additionnal_notebooks` and include
+3) The **atoll transects** and **atoll shapefiles** are included in this repository under `data/Shapefiles`. To use them, copy this folder into your data directory (`atoll_slr_data`) under a `raw` subfolder so that the structure `raw/Shapefiles` is created.
+4) Download the **external data**: Several helper notebooks and scripts are provided to assist with downloading the required data. These can be found in `notebooks/additionnal_notebooks` and include
 * `100_download_BEWARE_database`,
 * `101_download_COWCLIP` ,
 * `102_download_AR6_SLR_projections`,
