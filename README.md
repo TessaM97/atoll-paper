@@ -1,11 +1,11 @@
-# Möller et al. 2025 — The loss of safe land on atoll islands under different emissions pathways
+# Möller et al. 2026 — Half of atoll land becomes unsafe under half a meter of sea level rise due to wave-driven flooding
 
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 ## Description
 
-This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2025)**.
+This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2026)**.
 
 The repository uses the environment manager [pixi](https://pixi.sh/latest) to ensure reproducibility and compatibility of required packages. Transects used in the study are included under `data/Shapefiles`.
 
@@ -88,7 +88,7 @@ This repository, including all data and scripts, is licensed under the Creative 
 ## References
 
 If you use this repository, please cite:
-Möller, T., et al. (2025). The loss of safe land on atoll islands under different emissions pathways. [Journal Name], [DOI link]
+Möller, T., et al. (2026). Half of atoll land becomes unsafe under half a meter of sea level rise due to wave-driven flooding. [Journal Name], [DOI link]
 
 Please also cite any of the external datasets that you use (BEWARE_database, COWCLIP, AR6_SLR_projection COAST_RP,...)
 
