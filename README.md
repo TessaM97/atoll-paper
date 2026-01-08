@@ -1,11 +1,11 @@
-# Möller et al. 2026 — Half of atoll land becomes unsafe under half a meter of sea level rise due to wave-driven flooding
+# Möller et al. 2026 (in review) — Half of atoll land becomes unsafe under half a meter of sea level rise due to wave-driven flooding
 
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 ## Description
 
-This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2026)**, as well as the reef transects and Atoll Shapefiles.
+This repository provides Jupyter notebooks and scripts for the pre-processing of input datasets and the application of the **BEWARE framework** to estimate wave-driven flooding on atoll islands, as presented in **Möller et al. (2026, in review)**, as well as the reef transects and Atoll Shapefiles.
 
 The repository uses the environment manager [pixi](https://pixi.sh/latest) to ensure reproducibility and compatibility of required packages. Transects and Shapefiles used in the study are included under `data/Shapefiles`.
 
