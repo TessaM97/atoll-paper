@@ -122,6 +122,33 @@ inspect_netcdf_files(directory_path, recursive=True)
 
 
 # %%
+def inspect_input_file_stats(directory, nan_sentinel=-999.0):
+    files = sorted([f for f in os.listdir(directory) if f.endswith(".nc")])
+    
+    for fname in files:
+        fpath = os.path.join(directory, fname)
+        try:
+            ds = xr.open_dataset(fpath, decode_times=False)
+            da = ds["hs_avg"]
+            
+            raw_min = float(da.min())
+            raw_max = float(da.max())
+            
+            # Mask sentinel and compute clean stats
+            da_clean = da.where(da != nan_sentinel)
+            clean_min = float(da_clean.min())
+            clean_max = float(da_clean.max())
+            
+            print(f"\n  File     : {fname}")
+            print(f"  Raw      : min={raw_min:.4f}, max={raw_max:.4f}")
+            print(f"  Clean    : min={clean_min:.4f}, max={clean_max:.4f}")
+            ds.close()
+        except Exception as e:
+            print(f"❌ Error reading {fname}: {e}")
+
+inspect_input_file_stats(directory_path)
+
+# %%
 ds = xr.open_dataset(
     directory_path / "hs_JRC-ERAI_annual_1980-2014.nc",
     decode_times=False,
@@ -150,6 +177,7 @@ ds.to_netcdf(directory_path / "hs_JRC-ERAI_annual_1980-2014_fixed.nc")
 def regrid_file(input_path, output_path, lat_name="lat", lon_name="lon"):
     try:
         ds = xr.open_dataset(input_path, decode_times=False)
+        ds = ds.where(ds >= 0)
 
         # Guess coordinate names
         all_coords = list(ds.coords)
@@ -245,7 +273,7 @@ def plot_regridded_file(filepath, var_name=None):
     if "time" in da.dims:
         da = da.isel(time=0)
 
-    # Mask values below -100 by setting them to NaN
+    # Mask values below 0 by setting them to NaN
     da = da.where(da >= 0)
 
     da.plot(x=lon_name, y=lat_name, cmap="viridis")
@@ -449,8 +477,9 @@ time_coverage = check_time_extents(output_dir)
 
 # %%
 # Variables to average
-ensemble_mean.close()
+#ensemble_mean.close()
 target_vars = ["hs_avg", "hs_p10", "hs_p50", "hs_p90", "hs_p95", "hs_p99", "hs_max"]
+NAN_SENTINEL = -999.0  # fill value used across all COWCLIP Hs input files
 
 
 def get_dataset_means(fname, time_var="time", variables=target_vars):
@@ -476,7 +505,7 @@ def get_dataset_means(fname, time_var="time", variables=target_vars):
     for var in variables:
         if var in ds:
             data = ds[var].isel({time_var: year_mask})
-            data = data.where(data < 100)  # ⬅️ Mask values >= 100
+            data = data.where((data > NAN_SENTINEL) & (data < 100) ) # ⬅️ Mask values =-999 and   >= 100
             averaged.append(data.mean(dim=time_var))
         else:
             raise ValueError(

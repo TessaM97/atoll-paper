@@ -54,7 +54,7 @@ COWCLIP_H0_path = os.path.join(
 )
 
 COWCLIP_Tm_path = os.path.join(
-    INTERIM_DIR, "external/COWCLIP//COWCLIP_ensemble_mean_Tm_1995_2014.nc"
+    INTERIM_DIR, "external/COWCLIP/COWCLIP_ensemble_mean_Tm_1995_2014.nc"
 )
 
 
@@ -361,12 +361,12 @@ df_slr_all.head()
 gdf["W_reef"] = gdf["beach_widt"]
 gdf["beta_f"] = 25 / gdf["Fore_reef_"]
 # gdf
-gdf
+gdf.head()
 
 # %%
 df_inputs = gdf[["transect_i", "Atoll_FID", "FID_GADM", "geometry", "W_reef", "beta_f"]]
 df_all = df_slr_all.merge(df_inputs, on="transect_i", how="left")
-df_all
+df_all.head()
 
 
 # %%
@@ -422,11 +422,14 @@ BEWARE_inputs.rename(columns={"transect_i": "transect_id"}, inplace=True)
 BEWARE_inputs
 
 # %%
+from datetime import datetime
+
+date_str = datetime.today().strftime("%d%m%y")
+
 output_path = os.path.join(
     INTERIM_DIR,
-    "Atoll_BEWARE_inputs.parquet",
+    f"Atoll_BEWARE_inputs_{date_str}.parquet",
 )
-
 BEWARE_inputs.to_parquet(output_path, index=False, engine="pyarrow")
 
 # %%
@@ -446,3 +449,36 @@ scenario_stats = (
 
 print("Percentage exceeding 3m by scenario:")
 print(scenario_stats)
+
+# Check for negative H0 and H0L0 values
+h0_cols  = [c for c in BEWARE_inputs.columns if c=="H0"]
+h0l0_cols = [c for c in BEWARE_inputs.columns if c=="H0L0"]
+
+for col in h0_cols + h0l0_cols:
+    n_neg = (BEWARE_inputs[col] < 0).sum()
+    if n_neg > 0:
+        print(f"⚠️  {col}: {n_neg} negative values ({100*n_neg/total:.2f}%)")
+    else:
+        print(f"✅ {col}: no negative values")
+
+# %%
+# %%
+# Check for NaNs in H0 and H0L0
+for col in ["H0", "H0L0"]:
+    n_nan = BEWARE_inputs[col].isna().sum()
+    print(f"  {col}: {n_nan} NaNs ({100*n_nan/total:.2f}%)")
+
+# %%
+# Where are the NaN H0 transects?
+nan_mask = BEWARE_inputs["H0"].isna()
+print(BEWARE_inputs[nan_mask][["transect_id", "FID_GADM", "Atoll_FID"]].drop_duplicates())
+print(f"\nUnique transects affected: {BEWARE_inputs[nan_mask]['transect_id'].nunique()}")
+
+# %%
+# %%
+# Check how many transects Atoll_FID 1 has
+atoll_transects = BEWARE_inputs[BEWARE_inputs["Atoll_FID"] == 1]
+print(f"Total rows      : {len(atoll_transects)}")
+print(f"Unique transects: {atoll_transects['transect_id'].nunique()}")
+
+# %%

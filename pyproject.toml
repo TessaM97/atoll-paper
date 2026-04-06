@@ -13,13 +13,13 @@ version = "0.1.0"
 description = "Pipeline to handle atoll transect data and combine with necessary input data to integrate with BEWARE."
 readme = "README.md"
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = [
     "conda-forge",
 ]
 platforms = [
-    "osx-64",
     "osx-arm64",
+    "osx-64",
     "linux-64",
     "linux-aarch64",
     "win-64",

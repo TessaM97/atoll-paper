@@ -119,6 +119,33 @@ inspect_netcdf_files(directory_path, recursive=True)
 
 
 # %%
+def inspect_input_file_stats(directory, nan_sentinel=-999.0):
+    files = sorted([f for f in os.listdir(directory) if f.endswith(".nc")])
+    
+    for fname in files:
+        fpath = os.path.join(directory, fname)
+        try:
+            ds = xr.open_dataset(fpath, decode_times=False)
+            da = ds["tm_avg"]
+            
+            raw_min = float(da.min())
+            raw_max = float(da.max())
+            
+            # Mask sentinel and compute clean stats
+            da_clean = da.where(da != nan_sentinel)
+            clean_min = float(da_clean.min())
+            clean_max = float(da_clean.max())
+            
+            print(f"\n  File     : {fname}")
+            print(f"  Raw      : min={raw_min:.4f}, max={raw_max:.4f}")
+            print(f"  Clean    : min={clean_min:.4f}, max={clean_max:.4f}")
+            ds.close()
+        except Exception as e:
+            print(f"❌ Error reading {fname}: {e}")
+
+inspect_input_file_stats(directory_path)
+
+# %%
 ds = xr.open_dataset(
     directory_path / "Tm_JRC-ERAI_annual_1980-2014.nc", decode_times=False
 )
@@ -218,6 +245,7 @@ animate_nc_file(
 def regrid_file(input_path, output_path, lat_name="lat", lon_name="lon"):
     try:
         ds = xr.open_dataset(input_path, decode_times=False)
+        ds = ds.where(ds >= 0)
 
         # Guess coordinate names
         all_coords = list(ds.coords)
@@ -480,6 +508,7 @@ time_coverage = check_time_extents(output_dir)
 # %%
 # Variables to average
 target_vars = ["tm_avg", "tm_p10", "tm_p50", "tm_p90", "tm_p95", "tm_p99", "tm_max"]
+NAN_SENTINEL = -999.0  # fill value used across all COWCLIP Tm input files
 
 
 def get_dataset_means(fname, time_var="time", variables=target_vars):
@@ -507,7 +536,7 @@ def get_dataset_means(fname, time_var="time", variables=target_vars):
     for var in variables:
         if var in ds:
             data = ds[var].isel({time_var: year_mask})
-            data = data.where(data < 100)  # Mask values >= 100
+            data = data.where((data > NAN_SENTINEL) & (data < 100) ) # ⬅️ Mask values =-999 and   >= 100
             averaged.append(data.mean(dim=time_var))
         else:
             raise ValueError(
@@ -616,3 +645,5 @@ for j in range(i + 1, len(axs)):
 
 plt.tight_layout()
 plt.show()
+
+# %%
