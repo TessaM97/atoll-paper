@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # 014a — Find Optimal BEWARE Extension Ranges and Filter Half-Widths
+# # 014 — Find Optimal BEWARE Extension Ranges and Filter Half-Widths
 #
 # This notebook must be run before `015_extend_beware_by_eta_H0_H0L0.py`.
 # It determines:

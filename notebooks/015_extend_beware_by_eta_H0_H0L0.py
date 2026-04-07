@@ -28,7 +28,7 @@
 # 9. Plot 6 example groups (H0L0 interpolation check)
 # 10. Save as new NetCDF
 #
-# Note: Run `014a_find_optimal_eta_H0_H0L0_distances.py` first to generate
+# Note: Run `014_find_optimal_eta_H0_H0L0_distances.py` first to generate
 # `beware_matching_config.json`, which sets the extension ranges used here.
 
 # %%
@@ -71,7 +71,7 @@ ETA_STEP  = 0.05   # eta interpolation resolution (m)
 H0_STEP   = 0.1    # H0 interpolation resolution (m)
 H0L0_STEP = 0.001  # H0L0 interpolation resolution
 
-# ── RANGES FROM CONFIG (set by 014a) ─────────────────────────────────────────
+# ── RANGES FROM CONFIG (set by 014) ─────────────────────────────────────────
 ETA_MIN  = rng["ETA_MIN"]
 ETA_MAX  = rng["ETA_MAX"]
 H0_MIN   = rng["H0_MIN"]

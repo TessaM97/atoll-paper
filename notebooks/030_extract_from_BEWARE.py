@@ -15,7 +15,7 @@
 # %%
 # ── BEWARE matching filter half-widths ────────────────────────────────────────
 # Derived from p99 distance of input values to the nearest BEWARE grid point.
-# Found by 014a_find_optimal_eta_H0_H0L0_distances.py
+# Found by 014_find_optimal_eta_H0_H0L0_distances.py
 import json
 import os
 import sys
@@ -42,7 +42,7 @@ atoll_inputs_path = INTERIM_DIR / "Atoll_BEWARE_inputs.parquet"
 BEWARE_extended_path = PROCESSED_DIR / "BEWARE_Database_extended_v4.nc"
 config_path = PROCESSED_DIR / "beware_matching_config.json"
 
-# ── Load filter half-widths from config (produced by 014a) ───────────────────
+# ── Load filter half-widths from config (produced by 014) ───────────────────
 with open(config_path) as f:
     cfg = json.load(f)
 
@@ -89,7 +89,7 @@ beware_valid = None
 #
 # #### Usage
 # - Suggested to run as (`pixi run python notebooks/030_extract_from_BEWARE.py`) from project-root.
-# - Requires `beware_matching_config.json` produced by `014a_find_optimal_eta_H0_H0L0_distances.py`.
+# - Requires `beware_matching_config.json` produced by `014_find_optimal_eta_H0_H0L0_distances.py`.
 
 
 # %%
