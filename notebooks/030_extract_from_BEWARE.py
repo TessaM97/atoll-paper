@@ -5,17 +5,22 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: atoll_slr_paper
 #     language: python
-#     name: python3
+#     name: atoll_slr_paper
 # ---
 
 # %%
+# ── BEWARE matching filter half-widths ────────────────────────────────────────
+# Derived from p99 distance of input values to the nearest BEWARE grid point.
+# Found by 014a_find_optimal_eta_H0_H0L0_distances.py
+import json
 import os
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 import netCDF4 as nc
@@ -29,16 +34,28 @@ project_root = Path(__file__).resolve().parents[1]
 sys.path.append(str(project_root))
 from src.settings import DATA_DIR, INTERIM_DIR, PROCESSED_DIR, RAW_DIR
 
-# Paths
-directory_path = RAW_DIR / "external/COWCLIP"
 print("Using data directory:", DATA_DIR)
 
+# ── Paths ─────────────────────────────────────────────────────────────────────
 # Inputs
 atoll_inputs_path = INTERIM_DIR / "Atoll_BEWARE_inputs.parquet"
-BEWARE_extended_path = INTERIM_DIR / "BEWARE_Database_extended_avg.nc"
-# Outputs
-results_csv = PROCESSED_DIR / "Atoll_BEWARE_processed_outputs.csv"
-results_parquet = PROCESSED_DIR / "Atoll_BEWARE_processed_outputs.parquet"
+BEWARE_extended_path = PROCESSED_DIR / "BEWARE_Database_extended_v4.nc"
+config_path = PROCESSED_DIR / "beware_matching_config.json"
+
+# ── Load filter half-widths from config (produced by 014a) ───────────────────
+with open(config_path) as f:
+    cfg = json.load(f)
+
+ETA_FILTER = cfg["filter_halfwidths"]["ETA_FILTER"]
+H0_FILTER = cfg["filter_halfwidths"]["H0_FILTER"]
+H0L0_FILTER = cfg["filter_halfwidths"]["H0L0_FILTER"]
+
+print(
+    f"Loaded filter halfwidths: eta=±{ETA_FILTER}, H0=±{H0_FILTER}, H0L0=±{H0L0_FILTER}"
+)
+
+# beware_valid is set once in main() and used by the matching function
+beware_valid = None
 
 
 # %% [markdown]
@@ -50,58 +67,55 @@ results_parquet = PROCESSED_DIR / "Atoll_BEWARE_processed_outputs.parquet"
 #
 # #### Key Steps
 # 1. **Load BEWARE Database**:
-#    Opens the extended BEWARE NetCDF database and converts it into a structured NumPy array for fast matching.
+#    Opens the extended BEWARE NetCDF database (`BEWARE_Database_extended_v4.nc`)
+#    and pre-filters to valid entries (Cf=0.05, beta_Beach=0.10, W_reef>1) once.
 #
 # 2. **Filter Inputs**:
-#    Reads pre-processed transect-level input data (`Atoll_BEWARE_inputs.parquet`) and restricts it to relevant confidence–scenario combinations (e.g., `"medium-ssp585"`, `"low-ssp585"`).
+#    Reads pre-processed transect-level input data (`Atoll_BEWARE_inputs.parquet`) and restricts it to relevant confidence–scenario combinations.
 #
 # 3. **Efficient Matching**:
-#    - For each row, eta values are pre-filtered within a ±0.1 range to reduce computation.
+#    - For each row, candidates are pre-filtered using tight windows around eta, H0, H0L0
+#      (widths from `beware_matching_config.json`).
+#    - Falls back to relaxing the H0L0 filter if no candidates are found.
 #    - A normalized distance score is calculated across parameters (`W_reef`, `beta_f`, `H0`, `H0L0`, `eta0`).
-#    - The closest match’s **R2pIndex** is selected.
+#    - The closest match's **R2pIndex** is selected.
 #
 # 4. **Batch Processing**:
 #    Vectorized functions and progress bars (`tqdm`) are used for efficient row-wise application.
 #
 # 5. **Output Results**:
-#    Matched results are merged with metadata and saved into both `.parquet` and `.csv` formats:
-#    - `Atoll_BEWARE_processed_outputs_2020-2150.parquet`
-#    - `Atoll_BEWARE_processed_outputs_2020-2150.csv`
+#    Matched results are merged with metadata and saved into both `.parquet` and `.csv` formats
+#    with a datestamp suffix.
 #
 # #### Usage
 # - Suggested to run as (`pixi run python notebooks/030_extract_from_BEWARE.py`) from project-root.
-# - Designed for **high-volume computations**; input filtering ensures speed and avoids unnecessary calculations.
-#
-# #### Notes
-# - Requires local access to the **extended BEWARE NetCDF database** (`BEWARE_Database_extended_avg.nc`).
-# - Progress and runtime are printed during execution for monitoring.
-#
+# - Requires `beware_matching_config.json` produced by `014a_find_optimal_eta_H0_H0L0_distances.py`.
 
 
 # %%
 def match_with_eta_vectorized(W_reef, beta_f, H0, H0L0, eta_value):
     """
-    Find the best matching R2pIndex in beware_array based on differences
-    of given parameters (W_reef, beta_f, H0, H0L0, eta_value), prioritizing H0, eta, and W_reef.
+    Return the best-matching R2pIndex from beware_valid.
+
+    Candidates are pre-filtered by tight windows around eta, H0, H0L0
+    then scored by sum of normalised distances across all five parameters.
+    Falls back to relaxing the H0L0 filter if no candidates are found.
     """
-    # Filter valid entries
-    valid = beware_array[
-        (beware_array.W_reef > 1)
-        & (np.isclose(beware_array.Cf, 0.05))
-        & (np.isclose(beware_array.beta_Beach, 0.10))
+    valid = beware_valid[
+        (np.abs(beware_valid.eta0 - eta_value) <= ETA_FILTER)
+        & (np.abs(beware_valid.H0 - H0) <= H0_FILTER)
+        & (np.abs(beware_valid.H0L0 - H0L0) <= H0L0_FILTER)
     ]
+
+    if len(valid) == 0:
+        # Fallback: relax H0L0 filter
+        valid = beware_valid[
+            (np.abs(beware_valid.eta0 - eta_value) <= ETA_FILTER)
+            & (np.abs(beware_valid.H0 - H0) <= H0_FILTER)
+        ]
     if len(valid) == 0:
         return np.nan
 
-    # Apply eta filter +- 0.1
-    eta_min = eta_value - 0.1
-    eta_max = eta_value + 0.1
-    valid = valid[(valid.eta0 >= eta_min) & (valid.eta0 <= eta_max)]
-
-    if len(valid) == 0:
-        return np.nan
-
-    # Calculate normalized distances for each parameter to score matches
     d_beta = np.abs(valid.beta_ForeReef - beta_f)
     d_H0 = np.abs(valid.H0 - H0)
     d_H0L0 = np.abs(valid.H0L0 - H0L0)
@@ -115,8 +129,8 @@ def match_with_eta_vectorized(W_reef, beta_f, H0, H0L0, eta_value):
         + d_eta / (np.max(d_eta) + 1e-6)
         + d_Wreef / (np.max(d_Wreef) + 1e-6)
     )
-    # Return R2pIndex with minimal combined distance
-    return valid.R2pIndex[np.argmin(scores)]
+
+    return valid["R2pIndex"].iloc[np.argmin(scores)]
 
 
 # %%
@@ -129,16 +143,13 @@ eta_dict = {
 
 
 def apply_all_matches(row):
-    """
-    For each row, match all eta values and return corresponding R2pIndex results.
-    """
+    """Apply matching for all three eta return periods (rp1, rp10, rp100)."""
     results = {
         "transect_id": row["transect_id"],
         "year": row["year"],
         "confidence": row["confidence"],
         "scenario": row["scenario"],
         "quantile": row["quantile"],
-        "confidence": row["confidence"],
         "FID_GADM": row["FID_GADM"],
     }
     for eta_col, output_col in eta_dict.items():
@@ -150,15 +161,10 @@ def apply_all_matches(row):
 
 # %%
 def main():
-    global beware_array
+    global beware_valid
 
-    # Determine script directory to load data relative to script location
-    home_dir = os.path.dirname(os.path.realpath(__file__))
-    out_dir = "/hdrive/all_users/moeller/MyDocuments/atoll-paper/data/processed/"
-
-    # Load BEWARE NetCDF database and convert to structured numpy array
+    # ── Load BEWARE database ──────────────────────────────────────────────────
     ds = nc.Dataset(BEWARE_extended_path)
-
     beware_array = np.rec.fromarrays(
         [
             ds.variables["W_reef"][:],
@@ -172,59 +178,75 @@ def main():
         ],
         names="W_reef,beta_ForeReef,H0,eta0,R2pIndex,Cf,beta_Beach,H0L0",
     )
+    print(f"BEWARE loaded            : {len(beware_array):,} entries")
 
-    # Load input data (subset for speed/testing)
+    # Pre-filter once — avoids repeated filtering per function call (~5000x speedup)
+    beware_df = pd.DataFrame(beware_array)
+    beware_valid = beware_df[
+        (beware_df.W_reef > 1)
+        & (np.isclose(beware_df.Cf, 0.05))
+        & (np.isclose(beware_df.beta_Beach, 0.10))
+    ].reset_index(drop=True)
+    print(f"After Cf/beta_Beach filter: {len(beware_valid):,} entries")
+
+    # ── Load and filter inputs ────────────────────────────────────────────────
     inputs = pd.read_parquet(atoll_inputs_path)
+    print(
+        f"Inputs loaded            : {len(inputs):,} rows  |  "
+        f"{inputs['transect_id'].nunique():,} transects"
+    )
 
-    # Filter inputs for allowed confidence-scenario combinations
     allowed_combos = [
         ("medium", "baseline"),
-        ("medium", "ssp585"),
+        ("medium", "ssp119"),
+        ("medium", "ssp126"),
         ("medium", "ssp245"),
         ("medium", "ssp370"),
-        ("medium", "ssp126"),
-        ("medium", "ssp119"),
+        ("medium", "ssp585"),
         ("low", "ssp585"),
     ]
-
     inputs = inputs[
         inputs[["confidence", "scenario"]].apply(tuple, axis=1).isin(allowed_combos)
     ]
+    print(f"After scenario filter    : {len(inputs):,} rows")
 
-    # Apply matching function with progress bar
-    tqdm.pandas()
+    # ── Run matching ──────────────────────────────────────────────────────────
+    tqdm.pandas(miniters=1000, mininterval=60)
     start = time.time()
     results = inputs.progress_apply(apply_all_matches, axis=1)
-    print(f"Completed matching in {time.time() - start:.2f} seconds.")
+    elapsed = time.time() - start
+    print(f"Completed matching in {elapsed:.1f} seconds  ({elapsed/60:.1f} minutes)")
 
-    # Merge matched results back with input metadata
+    # ── Merge and save ────────────────────────────────────────────────────────
+    merge_cols = [
+        "transect_id",
+        "FID_GADM",
+        "year",
+        "scenario",
+        "confidence",
+        "quantile",
+    ]
     results["transect_id"] = results["transect_id"].astype(int)
     outputs = pd.merge(
-        inputs[
-            ["transect_id", "FID_GADM", "year", "scenario", "confidence", "quantile"]
-        ],
+        inputs[merge_cols],
         results,
-        on=["transect_id", "FID_GADM", "year", "scenario", "confidence", "quantile"],
+        on=merge_cols,
         how="left",
     )
 
-    outputs.round(2).to_parquet(
-        results_parquet,
-        index=False,
-        engine="pyarrow",
-    )
-    outputs.round(2).to_csv(
-        results_csv,
-        index=False,
-    )
-    print("Saved output files.")
-    print(
-        "Started with "
-        + str(len(inputs))
-        + " rows, calculated "
-        + str(len(outputs))
-        + " rows."
-    )
+    # Check for unmatched rows
+    n_nan = outputs["R2pIndex_combined_rp1"].isna().sum()
+    if n_nan > 0:
+        print(f"WARNING: {n_nan:,} rows with NaN R2pIndex — check input ranges")
+
+    date_str = datetime.now().strftime("%d%m%Y")
+    out_parquet = PROCESSED_DIR / f"Atoll_BEWARE_processed_outputs_2020-2150_{date_str}.parquet"
+    out_csv = PROCESSED_DIR / f"Atoll_BEWARE_processed_outputs_2020-2150_{date_str}.csv"
+
+    outputs.round(2).to_parquet(out_parquet, index=False, engine="pyarrow")
+    outputs.round(2).to_csv(out_csv, index=False)
+
+    print(f"Saved {len(outputs):,} rows → {out_parquet}")
 
 
 # %%

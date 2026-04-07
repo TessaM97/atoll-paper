@@ -57,16 +57,16 @@ pixi run jupyter lab
 
 ## Download of required data
 
-Necessary datasets for reproduction of results include **COWCLIP**, **AR6_SLR_projection**, **COAST_RP**, **BEWARE_database**, as well as the **atoll transects**.
+Necessary datasets for reproduction of results include **COWCLIP**, **AR6_SLR_projection**, **COAST-RP**, **BEWARE_database**, as well as the **atoll transects**.
 
-1) Create a data directory for e.g. `atoll_slr_data`.
-2) Update `DATA_DIR` in `src/settings.py` to point to this folder.
-3) The **atoll transects** and **atoll shapefiles** are included in this repository under `data/Shapefiles`. To use them, copy this folder into your data directory (`atoll_slr_data`) under a `raw` subfolder so that the structure `raw/Shapefiles` is created.
-4) Download the **external data**: Several helper notebooks and scripts are provided to assist with downloading the required data. These can be found in `notebooks/additionnal_notebooks` and include
-* `100_download_BEWARE_database`,
-* `101_download_COWCLIP` ,
-* `102_download_AR6_SLR_projections`,
-* `103_download_COAST_RP`.
+1) Create a data directory, e.g. `atoll_slr_data`.
+2) Update `DATA_DIR` in `src/settings.py` to point to this folder (or set the `PAPER_DATA` environment variable).
+3) The **atoll transects** and **atoll shapefiles** are included in this repository under `data/Shapefiles`. Copy this folder into your data directory under `raw/Shapefiles`.
+4) Download the **external data**: helper notebooks are provided in `notebooks/additional_notebooks`:
+   * `100_download_BEWARE_database`
+   * `101_download_COWCLIP`
+   * `102_download_AR6_SLR_projections`
+   * `103_download_COAST-RP`
 
 **Note:** These scripts are provided to speed up data acquisition, but downloads may occasionally fail due to server issues or other external factors.
 Example execution:
@@ -76,11 +76,22 @@ pixi run python notebooks/additional_notebooks/101_download_COWCLIP.py
 
 ## Running the analysis
 
-Running the analysis
-The main workflow is organized into sequentially numbered notebooks:
-* `010–020`: Data preprocessing
-* `030`: Matching transects with the best BEWARE database entries
-Make sure you have updated  `DATA_DIR` in `src/settings.py` to point to your data storage folder. Follow the scripts/notebooks in numerical order. Each notebook contains detailed explanations.
+The main workflow is organised into sequentially numbered notebooks. Run them in order:
+
+| Notebook | Description |
+|---|---|
+| `010` | Load and preprocess shapefiles |
+| `011`, `011b` | Load and regrid COWCLIP wave data (Hs, Tm) |
+| `012` | Load IPCC AR6 SLR projections |
+| `013` | Load COAST-RP storm tide return periods |
+| `014a` | Find optimal BEWARE extension ranges → saves `beware_matching_config.json` |
+| `014` | Extend BEWARE database (interpolate/extrapolate) → saves `BEWARE_Database_extended_v4.nc` |
+| `020` | Combine all input datasets into BEWARE input table |
+| `030` | Match transects against extended BEWARE database → saves flooding outputs |
+
+Make sure you have updated `DATA_DIR` in `src/settings.py` before running. Each notebook contains detailed explanations.
+
+**Note:** `014a` must be run before `014`, and `014` must be run before `030`.
 
 ## License
 

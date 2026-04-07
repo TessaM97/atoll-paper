@@ -22,6 +22,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import xarray as xr
+from geopy.distance import geodesic
 from scipy.spatial import cKDTree
 
 # %%
@@ -53,13 +54,15 @@ COWCLIP_H0_path = os.path.join(
     INTERIM_DIR, "external/COWCLIP/COWCLIP_ensemble_mean_Hs_1995_2014.nc"
 )
 
-COWCLIP_Tm_path = os.path.join(
+# Note: COWCLIP_ensemble_mean_Tm file stores L0 (deepwater wavelength) directly,
+# not Tm — no further conversion needed.
+COWCLIP_L0_path = os.path.join(
     INTERIM_DIR, "external/COWCLIP/COWCLIP_ensemble_mean_Tm_1995_2014.nc"
 )
 
 
 COWCLIP_H0 = xr.open_dataset(COWCLIP_H0_path)
-COWCLIP_Tm = xr.open_dataset(COWCLIP_Tm_path)
+COWCLIP_L0 = xr.open_dataset(COWCLIP_L0_path)
 
 # Extract lat/lon grid
 lat = COWCLIP_H0["latitude"].values
@@ -73,14 +76,8 @@ quantile_map = {
 }
 
 
-# Compute wavelength using deepwater linear wave theory
-def calculate_wave_length_L0(Tm, g=9.81):
-    """Compute deepwater wavelength (L0) using linear wave theory."""
-    return float((g * Tm**2) / (2 * np.pi))
-
-
 # Function to extract nearest value for all centroids
-def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon):
+def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon):
     def find_nearest_index(array, value):
         return np.abs(array - value).argmin()
 
@@ -93,16 +90,14 @@ def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon):
 
         for q, (hs_var, tm_var) in quantile_map.items():
             hs_val = COWCLIP_H0[hs_var].values[lat_idx, lon_idx]
-            tm_val = COWCLIP_Tm[tm_var].values[lat_idx, lon_idx]
-            l0_val = calculate_wave_length_L0(tm_val)
+            tm_val = COWCLIP_L0[tm_var].values[lat_idx, lon_idx]
             records.append(
                 {
                     "transect_i": gdf.iloc[i]["transect_i"],
                     "quantile": q,
                     "H0": hs_val,
-                    "Tm": tm_val,
-                    "L0": l0_val,
-                    "H0L0": hs_val / l0_val if tm_val > 0 else np.nan,
+                    "L0": tm_val,
+                    "H0L0": hs_val / tm_val if tm_val > 0 else np.nan,
                 }
             )
 
@@ -110,8 +105,16 @@ def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon):
 
 
 # Apply extraction
-wave_df = extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon)
+wave_df = extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon)
 wave_df
+
+# %%
+# Check for negative H0 and L0 values
+neg_H0 = wave_df[wave_df["H0"] < 0]
+neg_L0 = wave_df[wave_df["L0"] < 0]
+
+print(f"Negative H0 values: {len(neg_H0)}")
+print(f"Negative L0 values: {len(neg_L0)}")
 
 # %% [markdown]
 # ### Load IPCC SLR Projections
@@ -169,22 +172,6 @@ transect_ids = gdf["transect_i"].values
 
 # Quantiles of interest
 target_quantiles = [0.17, 0.5, 0.83]
-target_years = [
-    2020,
-    2030,
-    2040,
-    2050,
-    2060,
-    2070,
-    2080,
-    2090,
-    2100,
-    2110,
-    2120,
-    2130,
-    2140,
-    2150,
-]
 
 # Container to hold all rows
 records = []
@@ -220,9 +207,6 @@ for _, row in slr_file_df.iterrows():
         q_idx = np.where(np.isclose(quantiles, q))[0][0]
 
         for y_idx, year in enumerate(years):
-            if year not in target_years:
-                continue  # 🔴 Skip unwanted years
-
             slr_slice = slr_values.isel(quantiles=q_idx, years=y_idx).values.astype(
                 float
             )
@@ -255,26 +239,6 @@ df_slr_all = pd.DataFrame.from_records(records)
 print(df_slr_all.head())
 
 
-# %%
-# Step 1: Filter original DataFrame
-filtered = df_slr_all[
-    (df_slr_all["confidence"] == "medium")
-    & (df_slr_all["scenario"] == "ssp119")
-    & (df_slr_all["year"] == 2020)
-    & (df_slr_all["quantile"] == 0.50)
-]
-
-# Step 2: Create modified copy
-modified = filtered.copy()
-modified["year"] = 2005
-modified["eta_SLR"] = 0.0
-modified["scenario"] = "baseline"
-modified
-# Step 3: Append to original DataFrame
-
-df_slr_all = pd.concat([df_slr_all, modified], ignore_index=True)
-
-
 # %% [markdown]
 # ### Load COAST-RP
 
@@ -283,7 +247,6 @@ df_slr_all = pd.concat([df_slr_all, modified], ignore_index=True)
 COASTRP_path = os.path.join(RAW_DIR, "external/COAST-RP/COAST-RP.nc")
 
 COASTRP = xr.open_dataset(COASTRP_path)
-
 
 # Coordinates of storm tide stations
 x = COASTRP["station_x_coordinate"].values
@@ -295,6 +258,15 @@ tree = cKDTree(station_coords)
 
 # Coordinates of transects
 centroid_coords = np.array([(geom.y, geom.x) for geom in gdf.geometry])
+
+# Compute distances in km using geodesic for quality checking
+_, nearest_idx_coastrp = tree.query(centroid_coords)
+distances_km = [
+    geodesic((lat1, lon1), station_coords[idx]).km
+    for (lat1, lon1), idx in zip(centroid_coords, nearest_idx_coastrp)
+]
+gdf["dist_to_station_km"] = distances_km
+print(f"Max distance to nearest COAST-RP station: {max(distances_km):.1f} km")
 transect_ids = gdf["transect_i"].values
 
 # Map storm tide values from each return period
