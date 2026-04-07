@@ -26,6 +26,7 @@ from pathlib import Path
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 # %%
@@ -93,25 +94,25 @@ beware_valid = None
 
 
 # %%
-def match_with_eta_vectorized(W_reef, beta_f, H0, H0L0, eta_value):
+def match_with_eta_vectorized(W_reef, beta_f, H0, H0L0, eta_value, bv):
     """
-    Return the best-matching R2pIndex from beware_valid.
+    Return the best-matching R2pIndex from bv (pre-filtered beware_valid).
 
     Candidates are pre-filtered by tight windows around eta, H0, H0L0
     then scored by sum of normalised distances across all five parameters.
     Falls back to relaxing the H0L0 filter if no candidates are found.
     """
-    valid = beware_valid[
-        (np.abs(beware_valid.eta0 - eta_value) <= ETA_FILTER)
-        & (np.abs(beware_valid.H0 - H0) <= H0_FILTER)
-        & (np.abs(beware_valid.H0L0 - H0L0) <= H0L0_FILTER)
+    valid = bv[
+        (np.abs(bv.eta0 - eta_value) <= ETA_FILTER)
+        & (np.abs(bv.H0 - H0) <= H0_FILTER)
+        & (np.abs(bv.H0L0 - H0L0) <= H0L0_FILTER)
     ]
 
     if len(valid) == 0:
         # Fallback: relax H0L0 filter
-        valid = beware_valid[
-            (np.abs(beware_valid.eta0 - eta_value) <= ETA_FILTER)
-            & (np.abs(beware_valid.H0 - H0) <= H0_FILTER)
+        valid = bv[
+            (np.abs(bv.eta0 - eta_value) <= ETA_FILTER)
+            & (np.abs(bv.H0 - H0) <= H0_FILTER)
         ]
     if len(valid) == 0:
         return np.nan
@@ -142,7 +143,7 @@ eta_dict = {
 }
 
 
-def apply_all_matches(row):
+def apply_all_matches(row, bv):
     """Apply matching for all three eta return periods (rp1, rp10, rp100)."""
     results = {
         "transect_id": row["transect_id"],
@@ -154,7 +155,7 @@ def apply_all_matches(row):
     }
     for eta_col, output_col in eta_dict.items():
         results[output_col] = match_with_eta_vectorized(
-            row["W_reef"], row["beta_f"], row["H0"], row["H0L0"], row[eta_col]
+            row["W_reef"], row["beta_f"], row["H0"], row["H0L0"], row[eta_col], bv
         )
     return pd.Series(results)
 
@@ -211,10 +212,15 @@ def main():
     print(f"After scenario filter    : {len(inputs):,} rows")
 
     # ── Run matching ──────────────────────────────────────────────────────────
-    tqdm.pandas(miniters=1000, mininterval=60)
+    N_JOBS = 64
+    rows = [row for _, row in inputs.iterrows()]
+    print(f"Running matching with {N_JOBS} parallel workers on {len(rows):,} rows...")
     start = time.time()
-    results = inputs.progress_apply(apply_all_matches, axis=1)
+    results_list = Parallel(n_jobs=N_JOBS)(
+        delayed(apply_all_matches)(row, beware_valid) for row in tqdm(rows, mininterval=60)
+    )
     elapsed = time.time() - start
+    results = pd.DataFrame(results_list)
     print(f"Completed matching in {elapsed:.1f} seconds  ({elapsed/60:.1f} minutes)")
 
     # ── Merge and save ────────────────────────────────────────────────────────
