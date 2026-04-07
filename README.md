@@ -84,14 +84,14 @@ The main workflow is organised into sequentially numbered notebooks. Run them in
 | `011`, `011b` | Load and regrid COWCLIP wave data (Hs, Tm) |
 | `012` | Load IPCC AR6 SLR projections |
 | `013` | Load COAST-RP storm tide return periods |
-| `014` | Find optimal BEWARE extension ranges → saves `beware_matching_config.json` |
-| `015` | Extend BEWARE database (interpolate/extrapolate) → saves `BEWARE_Database_extended_v4.nc` |
 | `020` | Combine all input datasets into BEWARE input table |
+| `021` | Find optimal BEWARE extension ranges → saves `beware_matching_config.json` |
+| `022` | Extend BEWARE database (interpolate/extrapolate) → saves `BEWARE_Database_extended_v4.nc` |
 | `030` | Match transects against extended BEWARE database → saves flooding outputs |
 
 Make sure you have updated `DATA_DIR` in `src/settings.py` before running. Each notebook contains detailed explanations.
 
-**Note:** `014` must be run before `015`, and `015` must be run before `030`.
+**Note:** `020` must be run before `021`, `021` before `022`, and `022` before `030`.
 
 ## License
 

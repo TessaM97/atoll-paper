@@ -5,24 +5,24 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
-#     display_name: atoll_slr_paper
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: atoll_slr_paper
+#     name: python3
 # ---
 
 # %% [markdown]
-# # 014 — Find Optimal BEWARE Extension Ranges and Filter Half-Widths
+# # 021 — Find Optimal BEWARE Extension Ranges and Filter Half-Widths
 #
-# This notebook must be run before `015_extend_beware_by_eta_H0_H0L0.py`.
+# This notebook must be run before `022_extend_beware_by_eta_H0_H0L0.py`.
 # It determines:
 # 1. The optimal filter half-widths for matching inputs to the BEWARE grid
 #    (based on p99 distance of input values to nearest grid point).
 # 2. The extension ranges (eta, H0, H0L0) needed to cover all input values.
 #
 # Results are saved to `beware_matching_config.json` in PROCESSED_DIR,
-# which is read by both `015_extend_beware_by_eta_H0_H0L0.py` and
+# which is read by both `022_extend_beware_by_eta_H0_H0L0.py` and
 # `030_extract_from_BEWARE.py`.
 
 # %%
@@ -39,7 +39,7 @@ import pandas as pd
 # %%
 # Add project root to Python path
 sys.path.append(str(Path().resolve().parent))
-from src.settings import INTERIM_DIR, PROCESSED_DIR
+from src.settings import INTERIM_DIR, PROCESSED_DIR, RAW_DIR
 
 print("Using processed directory:", PROCESSED_DIR)
 
@@ -51,7 +51,7 @@ print("Using processed directory:", PROCESSED_DIR)
 inputs = pd.read_parquet(INTERIM_DIR / "Atoll_BEWARE_inputs.parquet")
 
 # Load BEWARE database to get actual grid values
-ds = nc.Dataset(PROCESSED_DIR / "BEWARE_Database_extended_v4.nc")
+ds = nc.Dataset(RAW_DIR / "BEWARE_Database.nc")
 beware_eta = np.array(ds.variables["eta0"][:])
 beware_H0 = np.array(ds.variables["H0"][:])
 beware_H0L0 = np.array(ds.variables["H0L0"][:])
@@ -242,7 +242,7 @@ print(f"  Outer groups (W_reef × beta_ForeReef) : {N_OUTER}")
 print(f"\n  Estimated total rows : {n_total:,}")
 print(f"  Estimated file size  : ~{n_total * 8 * 8 / 1e9:.2f} GB  (8 vars × float64)")
 
-print("\n── Paste these into 015_extend_beware_by_eta_H0_H0L0.py ──")
+print("\n── Paste these into 022_extend_beware_by_eta_H0_H0L0.py ──")
 print(f"ETA_MIN   = {eta_lo}")
 print(f"ETA_MAX   = {eta_hi}")
 print(f"H0_MIN    = {h0_lo}   # clip H0 grid lower bound")
@@ -273,5 +273,3 @@ with open(config_path, "w") as f:
 
 print(f"Config saved → {config_path}")
 print(json.dumps(config, indent=2))
-
-# %%
