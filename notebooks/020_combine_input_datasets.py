@@ -54,15 +54,13 @@ COWCLIP_H0_path = os.path.join(
     INTERIM_DIR, "external/COWCLIP/COWCLIP_ensemble_mean_Hs_1995_2014.nc"
 )
 
-# Note: COWCLIP_ensemble_mean_Tm file stores L0 (deepwater wavelength) directly,
-# not Tm — no further conversion needed.
-COWCLIP_L0_path = os.path.join(
+COWCLIP_Tm_path = os.path.join(
     INTERIM_DIR, "external/COWCLIP/COWCLIP_ensemble_mean_Tm_1995_2014.nc"
 )
 
 
 COWCLIP_H0 = xr.open_dataset(COWCLIP_H0_path)
-COWCLIP_L0 = xr.open_dataset(COWCLIP_L0_path)
+COWCLIP_Tm = xr.open_dataset(COWCLIP_Tm_path)
 
 # Extract lat/lon grid
 lat = COWCLIP_H0["latitude"].values
@@ -76,8 +74,13 @@ quantile_map = {
 }
 
 
+def calculate_wave_length_L0(Tm, g=9.81):
+    """Compute deepwater wavelength (L0) from wave period (Tm) using linear wave theory."""
+    return float((g * Tm**2) / (2 * np.pi))
+
+
 # Function to extract nearest value for all centroids
-def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon):
+def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon):
     def find_nearest_index(array, value):
         return np.abs(array - value).argmin()
 
@@ -90,14 +93,16 @@ def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon):
 
         for q, (hs_var, tm_var) in quantile_map.items():
             hs_val = COWCLIP_H0[hs_var].values[lat_idx, lon_idx]
-            tm_val = COWCLIP_L0[tm_var].values[lat_idx, lon_idx]
+            tm_val = COWCLIP_Tm[tm_var].values[lat_idx, lon_idx]
+            l0_val = calculate_wave_length_L0(tm_val)
             records.append(
                 {
                     "transect_i": gdf.iloc[i]["transect_i"],
                     "quantile": q,
                     "H0": hs_val,
-                    "L0": tm_val,
-                    "H0L0": hs_val / tm_val if tm_val > 0 else np.nan,
+                    "Tm": tm_val,
+                    "L0": l0_val,
+                    "H0L0": hs_val / l0_val if l0_val > 0 else np.nan,
                 }
             )
 
@@ -105,7 +110,7 @@ def extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon):
 
 
 # Apply extraction
-wave_df = extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_L0, lat, lon)
+wave_df = extract_wave_quantiles(gdf, quantile_map, COWCLIP_H0, COWCLIP_Tm, lat, lon)
 wave_df
 
 # %%
@@ -115,6 +120,8 @@ neg_L0 = wave_df[wave_df["L0"] < 0]
 
 print(f"Negative H0 values: {len(neg_H0)}")
 print(f"Negative L0 values: {len(neg_L0)}")
+# Note: negative Tm/L0 should not occur physically; negative H0 may indicate
+# masked ocean grid cells. Both are filtered out in 011/011b before saving.
 
 # %% [markdown]
 # ### Load IPCC SLR Projections

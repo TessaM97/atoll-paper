@@ -577,6 +577,9 @@ if os.path.exists(output_path):
     os.remove(output_path)
     print(f"🗑️ Removed existing file at {output_path}")
 
+# Filter out non-positive values before saving
+ensemble_mean_interpolated = ensemble_mean_interpolated.where(ensemble_mean_interpolated > 0)
+
 # Save the result
 ensemble_mean_interpolated.to_netcdf(output_path)
 print(f"✅ Ensemble mean saved to '{output_path}'")

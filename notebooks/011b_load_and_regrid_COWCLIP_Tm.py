@@ -602,7 +602,7 @@ def interpolate_percentiles(ds, base_percentiles=None, target_percentiles=None):
 
 
 # === Run it ===
-output_path = INTERIM_DIR / "external/COWCLIP/COWCLIP_ensemble_mean_Tm_1995_2014.nc"
+output_path = INTERIM_DIR / "external/COWCLIP/COWCLIP_ensemble_mean_L0_1995_2014.nc"
 ensemble_mean = compute_ensemble_average(output_dir)
 ensemble_mean_interpolated = interpolate_percentiles(ensemble_mean)
 
@@ -611,6 +611,9 @@ ensemble_mean_interpolated = interpolate_percentiles(ensemble_mean)
 if os.path.exists(output_path):
     os.remove(output_path)
     print(f"🗑️ Removed existing file at {output_path}")
+
+# Filter out non-positive values before saving
+ensemble_mean_interpolated = ensemble_mean_interpolated.where(ensemble_mean_interpolated > 0)
 
 # Save the result
 ensemble_mean_interpolated.to_netcdf(output_path)
