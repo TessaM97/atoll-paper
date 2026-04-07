@@ -85,13 +85,13 @@ The main workflow is organised into sequentially numbered notebooks. Run them in
 | `012` | Load IPCC AR6 SLR projections |
 | `013` | Load COAST-RP storm tide return periods |
 | `014a` | Find optimal BEWARE extension ranges → saves `beware_matching_config.json` |
-| `014` | Extend BEWARE database (interpolate/extrapolate) → saves `BEWARE_Database_extended_v4.nc` |
+| `015` | Extend BEWARE database (interpolate/extrapolate) → saves `BEWARE_Database_extended_v4.nc` |
 | `020` | Combine all input datasets into BEWARE input table |
 | `030` | Match transects against extended BEWARE database → saves flooding outputs |
 
 Make sure you have updated `DATA_DIR` in `src/settings.py` before running. Each notebook contains detailed explanations.
 
-**Note:** `014a` must be run before `014`, and `014` must be run before `030`.
+**Note:** `014a` must be run before `015`, and `015` must be run before `030`.
 
 ## License
 

@@ -15,14 +15,14 @@
 # %% [markdown]
 # # 014a — Find Optimal BEWARE Extension Ranges and Filter Half-Widths
 #
-# This notebook must be run before `014_extend_beware_by_eta_H0_H0L0.py`.
+# This notebook must be run before `015_extend_beware_by_eta_H0_H0L0.py`.
 # It determines:
 # 1. The optimal filter half-widths for matching inputs to the BEWARE grid
 #    (based on p99 distance of input values to nearest grid point).
 # 2. The extension ranges (eta, H0, H0L0) needed to cover all input values.
 #
 # Results are saved to `beware_matching_config.json` in PROCESSED_DIR,
-# which is read by both `014_extend_beware_by_eta_H0_H0L0.py` and
+# which is read by both `015_extend_beware_by_eta_H0_H0L0.py` and
 # `030_extract_from_BEWARE.py`.
 
 # %%
@@ -242,7 +242,7 @@ print(f"  Outer groups (W_reef × beta_ForeReef) : {N_OUTER}")
 print(f"\n  Estimated total rows : {n_total:,}")
 print(f"  Estimated file size  : ~{n_total * 8 * 8 / 1e9:.2f} GB  (8 vars × float64)")
 
-print("\n── Paste these into 014_extend_beware_by_eta_H0_H0L0.py ──")
+print("\n── Paste these into 015_extend_beware_by_eta_H0_H0L0.py ──")
 print(f"ETA_MIN   = {eta_lo}")
 print(f"ETA_MAX   = {eta_hi}")
 print(f"H0_MIN    = {h0_lo}   # clip H0 grid lower bound")
