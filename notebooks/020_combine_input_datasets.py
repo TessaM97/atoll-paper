@@ -347,7 +347,7 @@ print(f"Added {len(baseline):,} baseline rows (SLR = 0, derived from ssp119 medi
 #
 # #### eta = offshore water levels : combine IPCC SLR + COAST_RP [m]
 # #### Wreef = reef width : beach_width [m]
-# #### betaf = fore reef slope: fore_reef_width / 25
+# #### betaf = fore reef slope:  25 / fore reef width
 # #### Hs = offshore significant wave height : COWCLIP [m]
 
 # %%
@@ -455,7 +455,6 @@ for col in h0_cols + h0l0_cols:
         print(f"✅ {col}: no negative values")
 
 # %%
-# %%
 # Check for NaNs in H0 and H0L0
 for col in ["H0", "H0L0"]:
     n_nan = BEWARE_inputs[col].isna().sum()
@@ -468,10 +467,7 @@ print(BEWARE_inputs[nan_mask][["transect_id", "FID_GADM", "Atoll_FID"]].drop_dup
 print(f"\nUnique transects affected: {BEWARE_inputs[nan_mask]['transect_id'].nunique()}")
 
 # %%
-# %%
 # Check how many transects Atoll_FID 1 has
 atoll_transects = BEWARE_inputs[BEWARE_inputs["Atoll_FID"] == 1]
 print(f"Total rows      : {len(atoll_transects)}")
 print(f"Unique transects: {atoll_transects['transect_id'].nunique()}")
-
-# %%
