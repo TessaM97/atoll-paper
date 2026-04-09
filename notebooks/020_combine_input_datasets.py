@@ -322,6 +322,20 @@ df_slr_all = df_slr_all.merge(wave_df, on=["transect_i", "quantile"], how="left"
 # Preview
 df_slr_all.head()
 
+# %%
+# ── Add baseline rows (SLR = 0, derived from ssp119 medium, quantile 0.50) ──
+baseline = df_slr_all[
+    (df_slr_all["confidence"] == "medium")
+    & (df_slr_all["scenario"] == "ssp119")
+    & (df_slr_all["quantile"] == 0.50)
+].copy()
+baseline["scenario"] = "baseline"
+baseline["eta_SLR"] = 0.0
+baseline["eta_combined_rp1"] = baseline["storm_tide_rp1"]
+baseline["eta_combined_rp10"] = baseline["storm_tide_rp10"]
+baseline["eta_combined_rp100"] = baseline["storm_tide_rp100"]
+df_slr_all = pd.concat([df_slr_all, baseline], ignore_index=True)
+print(f"Added {len(baseline):,} baseline rows (SLR = 0, derived from ssp119 medium)")
 
 # %%
 # gdf['dist_to_station_km'].max()

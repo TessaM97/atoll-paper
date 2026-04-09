@@ -39,7 +39,14 @@ print("Using data directory:", DATA_DIR)
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 # Inputs
-atoll_inputs_path = INTERIM_DIR / "Atoll_BEWARE_inputs.parquet"
+_input_candidates = sorted(
+    INTERIM_DIR.glob("Atoll_BEWARE_inputs_*.parquet"),
+    key=lambda p: p.stat().st_mtime,
+)
+if not _input_candidates:
+    raise FileNotFoundError(f"No Atoll_BEWARE_inputs_*.parquet found in {INTERIM_DIR}")
+atoll_inputs_path = _input_candidates[-1]
+print(f"Using inputs file        : {atoll_inputs_path.name}")
 BEWARE_extended_path = PROCESSED_DIR / "BEWARE_Database_extended_v4.nc"
 config_path = PROCESSED_DIR / "beware_matching_config.json"
 
