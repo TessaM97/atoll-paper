@@ -323,19 +323,28 @@ df_slr_all = df_slr_all.merge(wave_df, on=["transect_i", "quantile"], how="left"
 df_slr_all.head()
 
 # %%
-# ── Add baseline rows (SLR = 0, derived from ssp119 medium, quantile 0.50) ──
+# ── Add baseline rows (SLR = 0, year 2005, derived from ssp119 medium q0.50 at earliest year) ──
+_baseline_source_year = df_slr_all[
+    (df_slr_all["confidence"] == "medium")
+    & (df_slr_all["scenario"] == "ssp119")
+    & (df_slr_all["quantile"] == 0.50)
+]["year"].min()
+
 baseline = df_slr_all[
     (df_slr_all["confidence"] == "medium")
     & (df_slr_all["scenario"] == "ssp119")
     & (df_slr_all["quantile"] == 0.50)
+    & (df_slr_all["year"] == _baseline_source_year)
 ].copy()
+
 baseline["scenario"] = "baseline"
+baseline["year"] = 2005
 baseline["eta_SLR"] = 0.0
 baseline["eta_combined_rp1"] = baseline["storm_tide_rp1"]
 baseline["eta_combined_rp10"] = baseline["storm_tide_rp10"]
 baseline["eta_combined_rp100"] = baseline["storm_tide_rp100"]
 df_slr_all = pd.concat([df_slr_all, baseline], ignore_index=True)
-print(f"Added {len(baseline):,} baseline rows (SLR = 0, derived from ssp119 medium)")
+print(f"Added {len(baseline):,} baseline rows (year=2005, SLR=0, derived from ssp119 medium q0.50 at {_baseline_source_year})")
 
 # %%
 # gdf['dist_to_station_km'].max()

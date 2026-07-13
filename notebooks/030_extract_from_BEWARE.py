@@ -148,6 +148,7 @@ def match_with_eta_vectorized(W_reef, beta_f, H0, H0L0, eta_value, bv):
 # %%
 # Map eta columns to their respective output column names
 eta_dict = {
+    "eta_SLR": "R2pIndex_slr_only",
     "eta_combined_rp1": "R2pIndex_combined_rp1",
     "eta_combined_rp10": "R2pIndex_combined_rp10",
     "eta_combined_rp100": "R2pIndex_combined_rp100",
@@ -155,7 +156,7 @@ eta_dict = {
 
 
 def apply_all_matches(row, bv):
-    """Apply matching for all three eta return periods (rp1, rp10, rp100)."""
+    """Apply matching for all four eta return periods (slr_only, rp1, rp10, rp100)."""
     results = {
         "transect_id": row["transect_id"],
         "year": row["year"],
@@ -217,9 +218,11 @@ def main():
         ("medium", "ssp585"),
         ("low", "ssp585"),
     ]
-    inputs = inputs[
+    mask_combo = (
         inputs[["confidence", "scenario"]].apply(tuple, axis=1).isin(allowed_combos)
-    ]
+    )
+    mask_year = inputs["year"] <= 2150
+    inputs = inputs[mask_combo & mask_year]
     print(f"After scenario filter    : {len(inputs):,} rows")
 
     # ── Run matching ──────────────────────────────────────────────────────────
