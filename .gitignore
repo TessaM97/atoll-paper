@@ -19,6 +19,13 @@ __pycache__/
 data/processed/
 notebooks/additional_notebooks/data/
 
+# Local scratch outputs from ad-hoc GNS name-checking scripts (kept locally, not published)
+/gns_lookup_report.txt
+/gns_lookup_results.csv
+/gns_populated_report.txt
+/gns_populated_results.csv
+/gns_cache/
+
 # Ignore temporary files
 *.log
 *.tmp
